@@ -65,7 +65,7 @@ export default {
             scene3DOnly: false, //每个几何实例将只能以3D渲染以节省GPU内存
             sceneMode: 3, //初始场景模式 1 2D模式 2 2D循环模式 3 3D模式  Cesium.SceneMode
             fullscreenElement: document.body, //全屏时渲染的HTML元素 暂时没发现用处
-            imageryProvider:tianditu
+            imageryProvider:gaode
         });
 
 
