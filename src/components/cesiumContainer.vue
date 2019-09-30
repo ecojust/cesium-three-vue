@@ -15,7 +15,7 @@
         <el-button type="primary" @click="centerDialogVisible = false">确 定</el-button>
       </span>
     </el-dialog> -->
-    <Modal v-model="centerDialogVisible" fullscreen footer-hide title="Fullscreen Modal">
+    <Modal v-model="centerDialogVisible" fullscreen footer-hide title="Three.js">
         <div id="content" style="height:100%;">
           <component :is="curcomponent"></component>
         </div>
@@ -89,9 +89,28 @@ export default {
                 entity.polygon.outline = false;
                 entity.polygon.extrudedHeight = Math.floor(Math.random()*40+8) //80000~120000的随机数，单位是米
             }
-            // viewer.zoomTo(promise)
-
+            setTimeout(()=>{
+              // viewer.zoomTo(promise)
+              viewer.flyTo(promise)
+            },5000)
         });
+
+        // viewer.camera.position = Cesium.Cartesian3.fromDegrees(121.32248014211655,31.165403355271735);
+        // let cameraPos = viewer.camera.position;
+        // // 获取当前坐标系标准
+        // let ellipsoid = viewer.scene.globe.ellipsoid;
+        // // 根据坐标系标准，将笛卡尔坐标转换为地理坐标
+        // let cartographic = ellipsoid.cartesianToCartographic(cameraPos);
+        // // 获取镜头的高度
+        // let height = cartographic.height;
+        // viewer.camera.zoomOut(height * 120);
+
+        // // 镜头拉近
+        // setTimeout(()=>{
+        //   //viewer.camera.zoomIn(height / 3);
+        // },3000)
+
+
 
         var entity = viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(121.32248014211655,31.165403355271735),
@@ -101,7 +120,7 @@ export default {
                 material : Cesium.Color.BLUE.withAlpha(0.0)//可设置不同的MaterialProperty
             }
         });
-        viewer.trackedEntity = entity; // 镜头追踪，将镜头固定在对象上
+        // viewer.trackedEntity = entity; // 镜头追踪，将镜头固定在对象上
 
         var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction(

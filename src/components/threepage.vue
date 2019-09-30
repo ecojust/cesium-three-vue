@@ -1,6 +1,10 @@
 <template>
   <div class="three">
         <div id="threewebgl"></div>
+        <div class="mask" v-show="loading">
+          <div>加载中 {{percent}} %</div>
+
+        </div>
   </div>
    
 </template>
@@ -16,7 +20,9 @@ export default {
         camera:null,
         scene:null,
         renderer:null,
-        mesh:null
+        mesh:null,
+        percent:0,
+        loading:true
     }
   },
   mounted(){
@@ -61,10 +67,14 @@ export default {
         //  环境光
         var amlight = new THREE.AmbientLight(0xAAFFCC,0.1);
         amlight.castShadow = true;
-         this.scene.add(amlight);
+        this.scene.add(amlight);
+
+        var pointlight = new THREE.PointLight( 0xff0000, 0.5, 100 );
+        pointlight.position.set( 0, 5, 5 );
+        this.scene.add( pointlight );
 
 
-  //聚光灯
+        //聚光灯
         var spotLight = new THREE.SpotLight( 0xffffff );
         spotLight.position.set( 0,6,0 );
 
@@ -118,6 +128,7 @@ export default {
             obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.015;
             //将模型缩放并添加到场景当中
             obj.scene.traverse( function ( it ) {
+              // console.log(it)
                if (it.isMesh) {
                     it.castShadow = true;
                     // it.receiveShadow = true;
@@ -130,8 +141,22 @@ export default {
                             // else
                             it.material.side = THREE.DoubleSide;
                 }
-            } );
+            });
             vm.scene.add( obj.scene );
+            vm.loading = false;
+
+            },function ( xhr ) {
+              setTimeout(()=>{
+                var percent = parseFloat(xhr.loaded / 4041401 * 100).toFixed(0);
+                if(percent>99){
+                  percent = 99
+                }
+                vm.percent = percent;
+              },3000)
+              
+                // console.log( (xhr.loaded / 4041401 * 100) + '% loaded' );
+            },function ( error ) {
+              console.log('load error!'+error.getWebGLErrorMessage());
             }
         )
 
@@ -152,9 +177,23 @@ export default {
 .three{
   width:100%;
   height:100%;
+  position:relative;
   #threewebgl{
         width:100%;
         height:100%;
+  }
+  .mask{
+    width:100%;
+    height:100%;
+    position:absolute;
+    z-index:2;
+    top:0;
+    background-color:rgba(54, 49, 49, 0.8);
+    text-align: center;
+    padding-top:300px;
+    font-weight:700;
+    font-size:32px;
+    color:white;
   }
 }
 </style>
