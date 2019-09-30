@@ -12,6 +12,7 @@
 <script>
 import * as THREE from "three"
 import {cloneGltf} from '../lib/modelUtils'
+var TWEEN = require('tween.js');
 
 export default {
   name: 'threepage',
@@ -142,17 +143,20 @@ export default {
                             it.material.side = THREE.DoubleSide;
                 }
             });
+            vm.mesh = obj.scene;
             vm.scene.add( obj.scene );
             vm.loading = false;
+        initTween();
+
 
             },function ( xhr ) {
-              setTimeout(()=>{
+              // setTimeout(()=>{
                 var percent = parseFloat(xhr.loaded / 4041401 * 100).toFixed(0);
                 if(percent>99){
                   percent = 99
                 }
                 vm.percent = percent;
-              },3000)
+              // },3000)
               
                 // console.log( (xhr.loaded / 4041401 * 100) + '% loaded' );
             },function ( error ) {
@@ -160,11 +164,36 @@ export default {
             }
         )
 
+
+        //tween
+        var position;
+        function initTween(){
+            position = {x: 0};
+            var tween = new TWEEN.Tween(position).to({x: 3}, 2000);
+            tween.easing(TWEEN.Easing.Quadratic.Out);
+
+            var tweenBack = new TWEEN.Tween(position).to({x: 0}, 2000);
+            tweenBack.easing(TWEEN.Easing.Sinusoidal.InOut);
+
+            tween.chain(tweenBack);
+            tweenBack.chain(tween);
+
+            var onUpdate = function () {
+              var px = this.x;
+              console.log(vm.mesh)
+                vm.mesh.position.setY(px)
+            };
+
+            tween.onUpdate(onUpdate);
+            tweenBack.onUpdate(onUpdate);
+
+            tween.start();
+        }
+
     },
     animate(){
-        // this.mesh.rotation.x += 0.03;
-        // this.mesh.rotation.y += 0.03;
         this.renderer.render(this.scene,this.camera);
+        TWEEN.update();
         requestAnimationFrame(this.animate);
     }
 

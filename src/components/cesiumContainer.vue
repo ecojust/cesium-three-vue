@@ -106,7 +106,7 @@ export default {
             setTimeout(()=>{
               // viewer.zoomTo(promise)
               viewer.flyTo(promise)
-            },5000)
+            },1000)
         });
 
         // viewer.camera.position = Cesium.Cartesian3.fromDegrees(121.32248014211655,31.165403355271735);
@@ -146,7 +146,7 @@ export default {
                   var heading = Cesium.Math.toRadians(250.0);
                   var pitch = Cesium.Math.toRadians(-20.0);
                   var range = 500.0;
-                  viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(heading, pitch, range));
+                  // viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(heading, pitch, range));
                   setTimeout(()=>{
                     vm.centerDialogVisible = true;
                     vm.curcomponent = 'threepage'
