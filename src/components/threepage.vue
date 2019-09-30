@@ -57,7 +57,7 @@ export default {
             'py.jpg', 'ny.jpg',
             'pz.jpg', 'nz.jpg'
         ] );
-        // this.scene.background = cubeTexture;
+        this.scene.background = cubeTexture;
         //平行光
         var dirLight = new THREE.DirectionalLight(0xAAFFCC);
         dirLight.position.set(0, 50,0);

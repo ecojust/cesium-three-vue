@@ -52,7 +52,21 @@ export default {
       const TOKEN2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwN2YxMWJmMi1lOWI3LTQ3MGUtYTFlYi1mZGQzMzhhMWIxNmYiLCJpZCI6MTU5NjYsInNjb3BlcyI6WyJhc2wiLCJhc3IiLCJhc3ciLCJnYyJdLCJpYXQiOjE1NjkyOTkyMjF9.KLSIwDfkS-pAcHWITpJBb_82OXzt_qadEVXpCZEE06Y';
       Cesium.Ion.defaultAccessToken = TOKEN2;
 
-    //  var viewer = new Cesium.Viewer('cesiumContainer');
+    // const MAP_PATH = "localhost:8092/map/"
+    // const TERRAIN_PATH = "localhost:8092/terrain/"
+    // const terrainProviderTemp = new Cesium.CesiumTerrainProvider({
+    //     url: TERRAIN_PATH
+    // })
+    // // test
+    // let viewer = new Cesium.Viewer('cesiumContainer', {
+    //     shouldAnimate: true,
+    //     imageryProvider: Cesium.createTileMapServiceImageryProvider({
+    //         url: Cesium.buildModuleUrl(MAP_PATH)
+    //     }),
+    //     terrainProvider: terrainProviderTemp,
+    // });
+
+
 
       var viewer = new Cesium.Viewer('cesiumContainer',{ 
             //需要进行可视化的数据源的集合
@@ -75,7 +89,7 @@ export default {
 
 
 
-     var promise=Cesium.GeoJsonDataSource.load('/static/source/city.json');
+     var promise=Cesium.GeoJsonDataSource.load('/static/source/city2.json');
         promise.then(function(dataSource) {
             viewer.dataSources.add(dataSource);
             var entities = dataSource.entities.values;
@@ -128,13 +142,15 @@ export default {
                 var pick = viewer.scene.pick(click.position);
                 if(pick){
                   console.log(pick)
-                  var center = Cesium.Cartesian3.fromDegrees(121.32159501314163,31.165189910331343);
+                  var center = Cesium.Cartesian3.fromDegrees(121.33405923843382,31.173465713564905);
                   var heading = Cesium.Math.toRadians(250.0);
                   var pitch = Cesium.Math.toRadians(-20.0);
                   var range = 500.0;
-                  //viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(heading, pitch, range));
-                  vm.centerDialogVisible = true;
-                  vm.curcomponent = 'threepage'
+                  viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(heading, pitch, range));
+                  setTimeout(()=>{
+                    vm.centerDialogVisible = true;
+                    vm.curcomponent = 'threepage'
+                  },2000)
                 }
             },
             Cesium.ScreenSpaceEventType.LEFT_DOWN
