@@ -7,6 +7,7 @@
 
 <script>
 import * as THREE from "three"
+import {cloneGltf} from '../lib/modelUtils'
 
 export default {
   name: 'threepage',
@@ -30,7 +31,11 @@ export default {
         const height = dom.clientHeight;
         const draw = dom;
         this.camera = new THREE.PerspectiveCamera(130,width/height,0.01,10);
-        this.camera.position.z = 1;
+        this.camera.position.x = 0;
+        this.camera.position.y = 3;
+        this.camera.position.z = 3;
+
+
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({antialias:true});
         this.renderer.setSize(width,height);
@@ -46,12 +51,33 @@ export default {
             'py.jpg', 'ny.jpg',
             'pz.jpg', 'nz.jpg'
         ] );
-        this.scene.background = cubeTexture;
+        // this.scene.background = cubeTexture;
+        //平行光
+        var dirLight = new THREE.DirectionalLight(0xAAFFCC);
+        dirLight.position.set(0, 50,0);
 
-
-        var amlight = new THREE.AmbientLight(0xAAFFCC);
+        // this.scene.add(dirLight);
+        
+        //  环境光
+        var amlight = new THREE.AmbientLight(0xAAFFCC,0.1);
         amlight.castShadow = true;
-        this.scene.add(amlight);
+         this.scene.add(amlight);
+
+
+  //聚光灯
+        var spotLight = new THREE.SpotLight( 0xffffff );
+        spotLight.position.set( 0,6,0 );
+
+        spotLight.castShadow = true;
+
+        spotLight.shadow.mapSize.width = 1024;
+        spotLight.shadow.mapSize.height = 1024;
+
+        spotLight.shadow.camera.near = 500;
+        spotLight.shadow.camera.far = 4000;
+        spotLight.shadow.camera.fov = 30;
+
+        this.scene.add( spotLight );
 
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         // 如果使用animate方法时，将此函数删除
@@ -68,36 +94,44 @@ export default {
         //设置相机距离原点的最远距离
         this.controls.minDistance = 1;
         //设置相机距离原点的最远距离
-        this.controls.maxDistance = 500;
+        this.controls.maxDistance = 1000;
         //是否开启右键拖拽
         this.controls.enablePan = true;
 
         draw.appendChild(this.renderer.domElement);
     },
     add(){
-        // let geometry = new THREE.BoxGeometry(0.5,0.5,0.5);
-        // let material = new THREE.MeshNormalMaterial();
-        // this.mesh = new THREE.Mesh(geometry,material);
-        // this.scene.add(this.mesh);
-
+      var helper = new THREE.AxesHelper(50);
+        this.scene.add(helper);
         var vm = this;
-        // var objLoader = new THREE.OBJLoader();
-        // objLoader.load('/static/source/shinei.obj', function (object) {
-        //     //将模型缩放并添加到场景当中
-        //     console.log(object)
-        //     object.scale.set(0.2,0.2,0.2);
-        //     vm.scene.add(object);
-        // })
+
+
+        // var loader = new THREE.ObjectLoader();
+        // loader.load("/static/source/chair.json",function (obj) {
+        //   obj.scale.set(0.2,0.2,0.2);
+        //     vm.scene.add(obj);
+        // });
 
         var gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('/static/source/scene1.gltf', function (gltf) {
+        gltfLoader.load('/static/source/scene.gltf', function (gltf) {
+            let obj = cloneGltf(gltf);
+            obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.015;
             //将模型缩放并添加到场景当中
-            gltf.scene.traverse( function ( child ) {
-                // if ( child.isMesh ) {
-                //     child.material.envMap = envMap;
-                // }
+            obj.scene.traverse( function ( it ) {
+               if (it.isMesh) {
+                    it.castShadow = true;
+                    // it.receiveShadow = true;
+                }
+                if (it.material) {
+                            // if (it.material.opacity < 1) {
+                            //     it.material.side = THREE.BackSide;
+                            //     it.material.depthTest = it.material.depthWrite = false;
+                            // }
+                            // else
+                            it.material.side = THREE.DoubleSide;
+                }
             } );
-            vm.scene.add( gltf.scene );
+            vm.scene.add( obj.scene );
             }
         )
 

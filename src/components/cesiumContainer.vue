@@ -2,7 +2,7 @@
   <div class="index">
     <div id="cesiumContainer">
     </div>
-    <el-dialog
+    <!-- <el-dialog
       title="three.js"
       :visible.sync="centerDialogVisible"
       width="80%"
@@ -14,7 +14,12 @@
         <el-button @click="centerDialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="centerDialogVisible = false">确 定</el-button>
       </span>
-    </el-dialog>
+    </el-dialog> -->
+    <Modal v-model="centerDialogVisible" fullscreen footer-hide title="Fullscreen Modal">
+        <div id="content" style="height:100%;">
+          <component :is="curcomponent"></component>
+        </div>
+    </Modal>
   </div>
    
 </template>
@@ -65,7 +70,7 @@ export default {
             scene3DOnly: false, //每个几何实例将只能以3D渲染以节省GPU内存
             sceneMode: 3, //初始场景模式 1 2D模式 2 2D循环模式 3 3D模式  Cesium.SceneMode
             fullscreenElement: document.body, //全屏时渲染的HTML元素 暂时没发现用处
-            imageryProvider:gaode
+            imageryProvider:tianditu
         });
 
 
