@@ -1,8 +1,11 @@
 <template>
   <div class="three">
         <div id="threewebgl"></div>
+        <span class="btn" id="tween">tweenup</span>
+        <span class="btn" id="tweenback">tweenback</span>
         <div class="mask" v-show="loading">
           <div>加载中 {{percent}} %</div>
+          
 
         </div>
   </div>
@@ -38,9 +41,9 @@ export default {
         const height = dom.clientHeight;
         const draw = dom;
         this.camera = new THREE.PerspectiveCamera(130,width/height,0.01,10);
-        this.camera.position.x = 0;
-        this.camera.position.y = 3;
-        this.camera.position.z = 3;
+        this.camera.position.x = -3;
+        this.camera.position.y = 4;
+        this.camera.position.z = 6;
 
 
         this.scene = new THREE.Scene();
@@ -116,6 +119,24 @@ export default {
         this.scene.add(helper);
         var vm = this;
 
+        var geometry = new THREE.BoxGeometry( 7.5, 0.5, 7.5 );
+        var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+        var material1 = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+        var material2 = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+
+        var cube1 = new THREE.Mesh( geometry, material );
+        var cube2 = new THREE.Mesh( geometry, material1 );
+        var cube3 = new THREE.Mesh( geometry, material2 );
+        cube1.position.setY(0);
+        cube2.position.setY(0.5);
+        cube3.position.setY(1);
+
+
+        this.scene.add( cube1 );
+        this.scene.add( cube2 );
+        this.scene.add( cube3 );
+
+
 
         // var loader = new THREE.ObjectLoader();
         // loader.load("/static/source/chair.json",function (obj) {
@@ -128,7 +149,7 @@ export default {
             let obj = cloneGltf(gltf);
             obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.015;
             //将模型缩放并添加到场景当中
-            obj.scene.traverse( function ( it ) {
+            obj.scene.traverse( function ( it ) {``
               // console.log(it)
                if (it.isMesh) {
                     it.castShadow = true;
@@ -144,9 +165,11 @@ export default {
                 }
             });
             vm.mesh = obj.scene;
+            vm.mesh.position.setY(-2);
             vm.scene.add( obj.scene );
             vm.loading = false;
-        initTween();
+
+            
 
 
             },function ( xhr ) {
@@ -164,31 +187,53 @@ export default {
             }
         )
 
+        //bind animation
+        var up = document.getElementById('tween');
+        var down = document.getElementById('tweenback');
+        up.addEventListener('click',()=>{
+          console.log(12121)
+          tween();
+        })
+
+        down.addEventListener('click',()=>{
+          tweenBack();
+        })
+
 
         //tween
-        var position;
-        function initTween(){
-            position = {x: 0};
-            var tween = new TWEEN.Tween(position).to({x: 3}, 2000);
+        function tween(){
+          console.log('tween')
+            var position = {x: 0};
+            var tween = new TWEEN.Tween(position).to({x: 1}, 1000);
             tween.easing(TWEEN.Easing.Quadratic.Out);
-
-            var tweenBack = new TWEEN.Tween(position).to({x: 0}, 2000);
-            tweenBack.easing(TWEEN.Easing.Sinusoidal.InOut);
-
-            tween.chain(tweenBack);
-            tweenBack.chain(tween);
-
             var onUpdate = function () {
               var px = this.x;
-              console.log(vm.mesh)
-                vm.mesh.position.setY(px)
+              console.log(px)
+                cube1.position.setY(0 + px*2)
+
+                cube2.position.setY(0.5 + px*3)
+                cube3.position.setY(1 + px* 4)
             };
-
-            tween.onUpdate(onUpdate);
-            tweenBack.onUpdate(onUpdate);
-
+            tween.onUpdate(onUpdate)
             tween.start();
         }
+        function tweenBack(){
+            var position = {x: 1};
+            var tweenBack = new TWEEN.Tween(position).to({x: 0}, 1000);
+            tweenBack.easing(TWEEN.Easing.Sinusoidal.InOut);
+            var onUpdate = function () {
+              var px = this.x;
+              console.log(px)
+                cube1.position.setY(0 + px*2)
+
+                cube2.position.setY(0.5 + px*3)
+                cube3.position.setY(1 + px* 4)
+            };
+            tweenBack.onUpdate(onUpdate)
+            tweenBack.start();
+        }
+
+
 
     },
     animate(){
@@ -223,6 +268,23 @@ export default {
     font-weight:700;
     font-size:32px;
     color:white;
+  }
+  .btn{
+    position:absolute;
+    top:20px;
+    z-index:999;
+    background-color:gray;
+    color:white;
+    // border: 1px solid red;
+    border-radius:4px;
+    cursor:pointer;
+    padding:5px;
+  }
+  #tween{
+    left:700px;
+  }
+  #tweenback{
+    left:800px;
   }
 }
 </style>
