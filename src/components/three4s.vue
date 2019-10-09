@@ -167,7 +167,7 @@ export default {
           var  temperatureArray=new Array();
           for(let i = 0;i<20;i++){
             // temperatureArray.push(parseInt(Math.random()*35+20))
-            temperatureArray.push(85)
+            temperatureArray.push(50)
 
           }
           return temperatureArray;
@@ -180,7 +180,7 @@ export default {
           ];
           let positionY=[0,25,50,75,10,20];
           return {
-              x:i*4+10,
+              x:i*2+10,
               // y:positionY[i]
               y:20
           }
