@@ -15,6 +15,11 @@ export default new Router({
       path: '/three',
       name: 'threepage',
       component: () => import("@/components/threepage")
+    },
+    {
+      path: '/three4s',
+      name: 'three4s',
+      component: () => import("@/components/three4s")
     }
   ]
 })

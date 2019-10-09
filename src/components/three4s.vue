@@ -1,12 +1,11 @@
 <template>
-  <div class="three">
+  <div class="three4s">
         <div id="threewebgl"></div>
-        <span class="btn" id="animation">animation</span>
-        <div class="mask" v-show="loading">
-          <div>加载中 {{percent}} %</div>
-          
+        <!-- <span class="btn" id="animation">animation</span> -->
 
-        </div>
+        <!-- <div class="mask" v-show="loading">
+          <div>加载中 {{percent}} %</div>
+        </div> -->
   </div>
    
 </template>
@@ -17,7 +16,7 @@ import {cloneGltf} from '../lib/modelUtils'
 var TWEEN = require('tween.js');
 
 export default {
-  name: 'threepage',
+  name: 'three4s',
   data(){
     return {
         camera:null,
@@ -42,7 +41,7 @@ export default {
         this.camera = new THREE.PerspectiveCamera(130,width/height,0.01,10);
         this.camera.position.x = 0;
         this.camera.position.y = 4;
-        this.camera.position.z = 6;
+        this.camera.position.z = 5;
 
 
         this.scene = new THREE.Scene();
@@ -117,31 +116,8 @@ export default {
       var helper = new THREE.AxesHelper(50);
         this.scene.add(helper);
         var vm = this;
-
-        var geometry = new THREE.BoxGeometry( 7.5, 0.5, 7.5 );
-        var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-        var material1 = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-        var material2 = new THREE.MeshBasicMaterial( {color: 0xff0000} );
-
-        var cube1 = new THREE.Mesh( geometry, material );
-        var cube2 = new THREE.Mesh( geometry, material1 );
-        var cube3 = new THREE.Mesh( geometry, material2 );
-        cube1.position.setY(0);
-        cube2.position.setY(0.5);
-        cube3.position.setY(1);
-
-
-        this.scene.add( cube1 );
-        this.scene.add( cube2 );
-        this.scene.add( cube3 );
-
-
-
-        // var loader = new THREE.ObjectLoader();
-        // loader.load("/static/source/chair.json",function (obj) {
-        //   obj.scale.set(0.2,0.2,0.2);
-        //     vm.scene.add(obj);
-        // });
+        this.heatmap();
+        return;
 
         var gltfLoader = new THREE.GLTFLoader();
         gltfLoader.load('/static/source/scene.gltf', function (gltf) {
@@ -183,55 +159,135 @@ export default {
               console.log('load error!'+error.getWebGLErrorMessage());
             }
         )
-
-        //bind animation
-        var animation = document.getElementById('animation');
-        var up = true;
-        animation.addEventListener('click',()=>{
-          if(up){
-            tween();
-            up = false;
-          }else{
-            tweenBack();
-            up = true;
+    },
+    heatmap(){
+      //随机温度值
+      let getTemperature=()=>{
+          var  temperatureArray=new Array();
+          for(let i=0;i<9;i++){
+              temperatureArray[i]=new Array();
+              for(let j=0;j<9;j++){
+                  temperatureArray[i][j]=parseInt(Math.random()*35);
+              }
           }
-        })
-
-
-        //tween
-        function tween(){
-          console.log('tween')
-            var position = {x: 0};
-            var tween = new TWEEN.Tween(position).to({x: 1}, 1000);
-            tween.easing(TWEEN.Easing.Quadratic.Out);
-            var onUpdate = function () {
-              var px = this.x;
-              console.log(px)
-                cube1.position.setY(0 + px*1)
-
-                cube2.position.setY(0.5 + px*2)
-                cube3.position.setY(1 + px* 3)
+          return temperatureArray;
+      };
+      //获取温度点的XY坐标
+      let getPositionXY=(i,j)=>{
+          let positionX=[-25,-20,-15,-10,-5,0,10,15,20];
+          let positionY=[-25,-20,-15,-10,-5,0,10,15,20];
+          return {
+              x:positionX[i]*5,
+              y:positionY[j]*5
+          }
+      };
+      //绘制辐射圆
+      let drawCircular=(context,opts)=>{
+          let {x,y,radius,weight}=opts;
+          radius=parseInt(radius*weight);//计算出实际的辐射圆
+          // 创建圆设置填充色
+          let rGradient = context.createRadialGradient(x, y, 0, x, y, radius);
+          rGradient.addColorStop(0, "rgba(0, 1, 0, 1)");
+          rGradient.addColorStop(1, "rgba(1, 0, 0, 0)");
+          context.fillStyle = rGradient;
+          // 设置globalAlpha
+          context.globalAlpha = weight;
+          context.beginPath();
+          context.arc(x, y, radius, 0, 2 * Math.PI);
+          context.closePath();
+          context.fill();// 填充
+      };
+      //调色板
+      let createPalette=()=>{
+            //颜色条的颜色分布
+            let colorStops = {
+                0: "#0ff",
+                0.4: "#0f0",
+                0.8: "#ff0",
+                1: "#f00"
             };
-            tween.onUpdate(onUpdate)
-            tween.start();
-        }
-        function tweenBack(){
-            var position = {x: 1};
-            var tweenBack = new TWEEN.Tween(position).to({x: 0}, 1000);
-            tweenBack.easing(TWEEN.Easing.Sinusoidal.InOut);
-            var onUpdate = function () {
-              var px = this.x;
-              console.log(px)
-                cube1.position.setY(0 + px*1)
+            //颜色条的大小
+            let width = 256, height = 1;
+            // 创建canvas
+            let paletteCanvas = document.createElement("canvas");
+            paletteCanvas.width = width;
+            paletteCanvas.height = height;
+            let ctx = paletteCanvas.getContext("2d");
 
-                cube2.position.setY(0.5 + px*2)
-                cube3.position.setY(1 + px* 3)
-            };
-            tweenBack.onUpdate(onUpdate)
-            tweenBack.start();
-        }
+            // 创建线性渐变色
+            let linearGradient = ctx.createLinearGradient(0, 0, width, 0);
+            for (const key in colorStops) {
+                linearGradient.addColorStop(key, colorStops[key]);
+            }
 
+            // 绘制渐变色条
+            ctx.fillStyle = linearGradient;
+            ctx.fillRect(0, 0, width, height);
 
+            let imageData = ctx.getImageData(0, 0, width, height).data;// 读取像素值
+
+            return {
+                canvas: paletteCanvas,
+                pickColor: function (position) {
+                    return imageData.slice(position * 4, position * 4+3 )
+                }
+            }
+        };
+      //绘制热力图
+      let heatMap=(width,height)=>{
+            let canvas = document.createElement("canvas");
+            canvas.width=width;
+            canvas.height=height;
+            let context = canvas.getContext("2d");
+            let tenperature=getTemperature();
+
+            for(let i=0;i<9;i++) {
+                for (let j = 0; j < 9; j++) {
+                    let weight=tenperature[i][j]/33;  //计算出当前温度占标准温度的权值
+                    drawCircular(context,{
+                        x:getPositionXY(i,j).x,
+                        y:getPositionXY(i,j).y,
+                        radius:20,
+                        weight:weight
+                    })
+                }
+            }
+            let palette=createPalette();
+            // document.body.appendChild(palette.canvas);
+            let imageData = context.getImageData(0, 0, width, height);
+            let data=imageData.data;
+
+            for (let i = 3; i < data.length; i += 4) {//根据画面数据绘制颜色
+                let alpha = data[i];
+                let color = palette.pickColor(alpha);
+                console.log(color)
+                data[i - 3] = color[0];
+                data[i - 2] = color[1];
+                data[i - 1] = color[2];
+            }
+
+            for(var i = 0; i < imageData.data.length; i += 4) {// 背景设置成青色
+                if(imageData.data[i + 3] == 0) {
+                    imageData.data[i] = 0;
+                    imageData.data[i + 1] = 255;
+                    imageData.data[i + 2] = 255;
+                    imageData.data[i + 3] = 255;
+                }
+            }
+            context.putImageData(imageData, 0, 0);//设置画面数据
+            return canvas;
+        };
+        let heatMapGeo = new THREE.PlaneGeometry(25,25);
+        let heatMapTexture = new THREE.Texture(heatMap(100,100));
+
+        let heatMapMaterial = new THREE.MeshBasicMaterial({
+            map: heatMapTexture
+        });
+        heatMapMaterial.map.needsUpdate = true;
+        var heatMapPlane = new THREE.Mesh(heatMapGeo,heatMapMaterial);
+        heatMapPlane.position.set(0,0,0);
+        // heatMapPlane.rotation.copy(new THREE.Euler(-Math.PI/2,0, Math.PI));
+        this.scene.add(heatMapPlane);
 
     },
     animate(){
@@ -246,7 +302,7 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="less">
-.three{
+.three4s{
   width:100%;
   height:100%;
   position:relative;
