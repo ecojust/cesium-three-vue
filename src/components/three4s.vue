@@ -38,9 +38,9 @@ export default {
         const width = dom.clientWidth;
         const height = dom.clientHeight;
         const draw = dom;
-        this.camera = new THREE.PerspectiveCamera(130,width/height,0.01,10);
+        this.camera = new THREE.PerspectiveCamera(160,width/height,0.01,100);
         this.camera.position.x = 0;
-        this.camera.position.y = 4;
+        this.camera.position.y = 0;
         this.camera.position.z = 5;
 
 
@@ -161,30 +161,34 @@ export default {
         )
     },
     heatmap(){
+      var vm = this;
       //随机温度值
       let getTemperature=()=>{
           var  temperatureArray=new Array();
-          for(let i=0;i<9;i++){
-              temperatureArray[i]=new Array();
-              for(let j=0;j<9;j++){
-                  temperatureArray[i][j]=parseInt(Math.random()*35);
-              }
+          for(let i = 0;i<20;i++){
+            // temperatureArray.push(parseInt(Math.random()*35+20))
+            temperatureArray.push(85)
+
           }
           return temperatureArray;
       };
       //获取温度点的XY坐标
-      let getPositionXY=(i,j)=>{
-          let positionX=[-25,-20,-15,-10,-5,0,10,15,20];
-          let positionY=[-25,-20,-15,-10,-5,0,10,15,20];
+      let getPositionXY=(i)=>{
+          let positionX=[
+            
+
+          ];
+          let positionY=[0,25,50,75,10,20];
           return {
-              x:positionX[i]*5,
-              y:positionY[j]*5
+              x:i*4+10,
+              // y:positionY[i]
+              y:20
           }
       };
       //绘制辐射圆
       let drawCircular=(context,opts)=>{
           let {x,y,radius,weight}=opts;
-          radius=parseInt(radius*weight);//计算出实际的辐射圆
+          // radius=parseInt(radius*weight);//计算出实际的辐射圆
           // 创建圆设置填充色
           let rGradient = context.createRadialGradient(x, y, 0, x, y, radius);
           rGradient.addColorStop(0, "rgba(0, 1, 0, 1)");
@@ -240,38 +244,36 @@ export default {
             canvas.height=height;
             let context = canvas.getContext("2d");
             let tenperature=getTemperature();
+            var size = tenperature.length;
 
-            for(let i=0;i<9;i++) {
-                for (let j = 0; j < 9; j++) {
-                    let weight=tenperature[i][j]/33;  //计算出当前温度占标准温度的权值
+            for(let i=0;i<size;i++) {
+                // for (let j = 0; j < size; j++) {
+                    let weight=tenperature[i]/100;  //计算出当前温度占标准温度的权值
                     drawCircular(context,{
-                        x:getPositionXY(i,j).x,
-                        y:getPositionXY(i,j).y,
-                        radius:20,
+                        x:getPositionXY(i).x,
+                        y:getPositionXY(i).y,
+                        radius:8,
                         weight:weight
                     })
-                }
+                // }
             }
             let palette=createPalette();
             // document.body.appendChild(palette.canvas);
             let imageData = context.getImageData(0, 0, width, height);
             let data=imageData.data;
+            // console.log(data)
 
             for (let i = 3; i < data.length; i += 4) {//根据画面数据绘制颜色
                 let alpha = data[i];
                 let color = palette.pickColor(alpha);
-                console.log(color)
                 data[i - 3] = color[0];
                 data[i - 2] = color[1];
                 data[i - 1] = color[2];
-            }
-
-            for(var i = 0; i < imageData.data.length; i += 4) {// 背景设置成青色
-                if(imageData.data[i + 3] == 0) {
-                    imageData.data[i] = 0;
-                    imageData.data[i + 1] = 255;
-                    imageData.data[i + 2] = 255;
-                    imageData.data[i + 3] = 255;
+                if(alpha==0){
+                  data[i - 3] = 0;
+                  data[i - 2] = 255;
+                  data[i - 1] = 255;
+                  //data[i] = 255;
                 }
             }
             context.putImageData(imageData, 0, 0);//设置画面数据
@@ -281,13 +283,19 @@ export default {
         let heatMapTexture = new THREE.Texture(heatMap(100,100));
 
         let heatMapMaterial = new THREE.MeshBasicMaterial({
-            map: heatMapTexture
+            map: heatMapTexture,
+            transparent:true
         });
         heatMapMaterial.map.needsUpdate = true;
         var heatMapPlane = new THREE.Mesh(heatMapGeo,heatMapMaterial);
         heatMapPlane.position.set(0,0,0);
+        heatMapPlane.rotation.X = -Math.PI/2;
+
         // heatMapPlane.rotation.copy(new THREE.Euler(-Math.PI/2,0, Math.PI));
         this.scene.add(heatMapPlane);
+
+
+
 
     },
     animate(){
