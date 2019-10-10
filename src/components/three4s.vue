@@ -26,7 +26,8 @@ export default {
         renderer:null,
         mesh:null,
         percent:0,
-        loading:true
+        loading:true,
+        cars:[]
     }
   },
   mounted(){
@@ -38,29 +39,27 @@ export default {
   methods:{
     drawheat(){
       var app = document.getElementsByClassName('three4s')[0];
-      var width = 600,height = 400;
+      var width = 400,height = 400;
       let paletteCanvas = document.createElement("div");
-      paletteCanvas.style.cssText = "height:400px;width:600px;display:none;";
+      paletteCanvas.style.cssText = "height:400px;width:400px;display:none;";
 
       app.appendChild(paletteCanvas)
 
       var heatmapInstance = Heatmap.create({
         container: paletteCanvas
       })
-      // 构建一些随机数据点,网页切图价格这里替换成你的业务数据
       var points = []
       var max = 0
-      for(var i = 0;i<75;i++){
+      for(var i = 0;i<300;i++){
         var val = Math.floor(Math.random() * 100);
-        val = 40;
         max = Math.max(max, val);
         var point = {
-          x: 300+i*4,
-          y: 200,
-          // x:Math.floor(Math.random() * 600),
-          // y:Math.floor(Math.random() * 400),
+          // x: 0+i*4,
+          // y: 300,
+          x:Math.floor(Math.random() * 400),
+          y:Math.floor(Math.random() * 400),
           radius: 20,
-          value: val
+          value: 40
         };
         points.push(point)
       }
@@ -75,20 +74,55 @@ export default {
       return canvas;
       // document.body.appendChild(heatmapInstance)
     },
+    clickListener(width,height){
+      var vm = this;
+      var raycaster = new THREE.Raycaster();
+      var mouse = new THREE.Vector2();
+
+      function onMouseClick( event ) {
+          //通过鼠标点击的位置计算出raycaster所需要的点的位置，以屏幕中心为原点，值的范围为-1到1.
+          mouse.x = ( event.clientX / width ) * 2 - 1;
+          mouse.y = - ( event.clientY / height ) * 2 + 1;
+          // 通过鼠标点的位置和当前相机的矩阵计算出raycaster
+          raycaster.setFromCamera( mouse, vm.camera );
+          // 获取raycaster直线和所有模型相交的数组集合
+          if(vm.mesh){
+            var intersects = raycaster.intersectObjects( vm.mesh.children,true );
+            // console.log(vm.mesh.children,intersects)
+            for(var i = 0;i<intersects.length;i++){
+              var name = intersects[i].object.name;
+              if(~name.indexOf('car')){
+                console.log(intersects[i].object)
+              }
+              console.log(intersects[i].object.name);
+            }
+          }
+          // var intersects = raycaster.intersectObjects( vm.scene.children );
+          
+          // console.log(intersects,vm.scene.children);
+          // //将所有的相交的模型的颜色设置为红色，如果只需要将第一个触发事件，那就数组的第一个模型改变颜色即可
+          // for ( var i = 0; i < intersects.length; i++ ) {
+          //     intersects[ i ].object.material.color.set( 0xff0000 );
+          // }
+      }
+      // window.addEventListener( 'click', onMouseClick, false );
+    },
     init(){
         var dom = document.getElementById('threewebgl');
         const width = dom.clientWidth;
         const height = dom.clientHeight;
         const draw = dom;
-        this.camera = new THREE.PerspectiveCamera(160,width/height,0.01,100);
+        this.camera = new THREE.PerspectiveCamera(10,width/height,10,4000);
         this.camera.position.x = 0;
-        this.camera.position.y = 5;
-        this.camera.position.z = 0;
+        this.camera.position.y = 400;
+        this.camera.position.z = 500;
 
 
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({antialias:true});
         this.renderer.setSize(width,height);
+        this.clickListener(width,height);
+
 
 
 
@@ -102,36 +136,40 @@ export default {
             'pz.jpg', 'nz.jpg'
         ] );
         this.scene.background = cubeTexture;
-        //平行光
-        var dirLight = new THREE.DirectionalLight(0xAAFFCC);
-        dirLight.position.set(0, 50,0);
 
-        // this.scene.add(dirLight);
+        //左侧平行光
+        var dirLight = new THREE.DirectionalLight(0xAAFFCC,0.5);
+        dirLight.position.set(-50, 50,0);
+        this.scene.add(dirLight);
         
         //  环境光
-        var amlight = new THREE.AmbientLight(0xAAFFCC,0.1);
+        var amlight = new THREE.AmbientLight(0xAAFFCC,0.5);
         amlight.castShadow = true;
         this.scene.add(amlight);
 
-        var pointlight = new THREE.PointLight( 0xff0000, 0.5, 100 );
-        pointlight.position.set( 0, 5, 5 );
-        this.scene.add( pointlight );
-
+        //4个象限点光
+        var pointlight1 = new THREE.PointLight( 0xff0000, 0.5, 100 );
+        var pointlight2 = new THREE.PointLight( 0xff0000, 0.5, 100 );
+        var pointlight3 = new THREE.PointLight( 0xff0000, 0.5, 100 );
+        var pointlight4 = new THREE.PointLight( 0xff0000, 0.5, 100 );
+        pointlight1.position.set( 25, 50, -25 );
+        pointlight2.position.set( -25, 50, -25 );
+        pointlight3.position.set( -25, 50, 25 );
+        pointlight4.position.set( 25, 50, 25 );
+        this.scene.add( pointlight1 );
+        this.scene.add( pointlight2 );
+        this.scene.add( pointlight3 );
+        this.scene.add( pointlight4 );
 
         //聚光灯
-        var spotLight = new THREE.SpotLight( 0xffffff );
-        spotLight.position.set( 0,6,0 );
-
+        var spotLight = new THREE.SpotLight( 0xffffff,1.5 );
+        spotLight.position.set( 0,50,60 );
         spotLight.castShadow = true;
-
-        spotLight.shadow.mapSize.width = 1024;
-        spotLight.shadow.mapSize.height = 1024;
-
-        spotLight.shadow.camera.near = 500;
-        spotLight.shadow.camera.far = 4000;
-        spotLight.shadow.camera.fov = 30;
-
+        spotLight.angle = Math.PI/3;
+        var spotHelper = new THREE.SpotLightHelper(spotLight);
         this.scene.add( spotLight );
+        // this.scene.add( spotHelper );
+
 
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         // 如果使用animate方法时，将此函数删除
@@ -155,18 +193,17 @@ export default {
         draw.appendChild(this.renderer.domElement);
     },
     add(){
-      var helper = new THREE.AxesHelper(50);
-        this.scene.add(helper);
+      var helper = new THREE.AxesHelper(100);
+        // this.scene.add(helper);
         var vm = this;
         this.heatmap();
-        return;
 
         var gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('/static/source/scene.gltf', function (gltf) {
+        gltfLoader.load('/static/4scar/4scar.gltf', function (gltf) {
             let obj = cloneGltf(gltf);
-            obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.015;
+            obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.005;
             //将模型缩放并添加到场景当中
-            obj.scene.traverse( function ( it ) {``
+            obj.scene.traverse( function ( it ) {
               // console.log(it)
                if (it.isMesh) {
                     it.castShadow = true;
@@ -182,7 +219,14 @@ export default {
                 }
             });
             vm.mesh = obj.scene;
-            vm.mesh.position.setY(-2.2);
+            var meshs = obj.scene.children;
+            for(var i =0;i<meshs.length;i++){
+              var item = meshs[i];
+              if(~item.name.indexOf('car')){
+                vm.cars.push(item)
+              }
+            }
+            // vm.mesh.position.setY(-2.2);
             vm.scene.add( obj.scene );
             vm.loading = false;
 
@@ -191,7 +235,7 @@ export default {
 
             },function ( xhr ) {
               // setTimeout(()=>{
-                var percent = parseFloat(xhr.loaded / 4041401 * 100).toFixed(0);
+                var percent = parseFloat(xhr.loaded / 292000 * 100).toFixed(0);
                 if(percent>99){
                   percent = 99
                 }
@@ -322,7 +366,7 @@ export default {
             return canvas;
         };
 
-        let heatMapGeo = new THREE.PlaneGeometry(25,25);
+        let heatMapGeo = new THREE.PlaneGeometry(90,90);
         let heatMapTexture = new THREE.Texture(heatMap(100,100));
 
         var vm = this;
@@ -335,7 +379,7 @@ export default {
         });
         heatMapMaterial.map.needsUpdate = true;
         var heatMapPlane = new THREE.Mesh(heatMapGeo,heatMapMaterial);
-        heatMapPlane.position.set(0,0,0);
+        heatMapPlane.position.set(0,0.1,0);
         heatMapPlane.rotation.x = -Math.PI/2;
 
         // heatMapPlane.rotation.copy(new THREE.Euler(-Math.PI/2,0, Math.PI));
@@ -347,6 +391,11 @@ export default {
     },
     animate(){
         this.renderer.render(this.scene,this.camera);
+        for(var i = 0;i<this.cars.length;i++){
+          // this.cars[i].rotation.y += 0.01;
+          // this.cars[i].rotateY(0.01);
+
+        }
         TWEEN.update();
         requestAnimationFrame(this.animate);
     }
