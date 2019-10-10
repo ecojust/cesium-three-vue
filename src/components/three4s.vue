@@ -1,6 +1,7 @@
 <template>
   <div class="three4s">
         <div id="threewebgl"></div>
+        <!-- <div id="heatmap"></div> -->
         <!-- <span class="btn" id="animation">animation</span> -->
 
         <!-- <div class="mask" v-show="loading">
@@ -12,6 +13,7 @@
 
 <script>
 import * as THREE from "three"
+import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
 var TWEEN = require('tween.js');
 
@@ -31,8 +33,48 @@ export default {
     this.init();
     this.add();
     this.animate();
+    // this.drawheat();
   },
   methods:{
+    drawheat(){
+      var app = document.getElementsByClassName('three4s')[0];
+      var width = 600,height = 400;
+      let paletteCanvas = document.createElement("div");
+      paletteCanvas.style.cssText = "height:400px;width:600px;display:none;";
+
+      app.appendChild(paletteCanvas)
+
+      var heatmapInstance = Heatmap.create({
+        container: paletteCanvas
+      })
+      // 构建一些随机数据点,网页切图价格这里替换成你的业务数据
+      var points = []
+      var max = 0
+      for(var i = 0;i<75;i++){
+        var val = Math.floor(Math.random() * 100);
+        val = 40;
+        max = Math.max(max, val);
+        var point = {
+          x: 300+i*4,
+          y: 200,
+          // x:Math.floor(Math.random() * 600),
+          // y:Math.floor(Math.random() * 400),
+          radius: 20,
+          value: val
+        };
+        points.push(point)
+      }
+      var data = {
+        max: 100,
+        data: points
+      }
+      heatmapInstance.setData(data);
+      var canvas = paletteCanvas.getElementsByTagName('canvas')[0];
+      console.log(canvas)
+      heatmapInstance = null;
+      return canvas;
+      // document.body.appendChild(heatmapInstance)
+    },
     init(){
         var dom = document.getElementById('threewebgl');
         const width = dom.clientWidth;
@@ -40,8 +82,8 @@ export default {
         const draw = dom;
         this.camera = new THREE.PerspectiveCamera(160,width/height,0.01,100);
         this.camera.position.x = 0;
-        this.camera.position.y = 0;
-        this.camera.position.z = 5;
+        this.camera.position.y = 5;
+        this.camera.position.z = 0;
 
 
         this.scene = new THREE.Scene();
@@ -252,7 +294,7 @@ export default {
                     drawCircular(context,{
                         x:getPositionXY(i).x,
                         y:getPositionXY(i).y,
-                        radius:8,
+                        radius:4,
                         weight:weight
                     })
                 // }
@@ -273,23 +315,28 @@ export default {
                   data[i - 3] = 0;
                   data[i - 2] = 255;
                   data[i - 1] = 255;
-                  //data[i] = 255;
+                  data[i] = 255;
                 }
             }
             context.putImageData(imageData, 0, 0);//设置画面数据
             return canvas;
         };
+
         let heatMapGeo = new THREE.PlaneGeometry(25,25);
         let heatMapTexture = new THREE.Texture(heatMap(100,100));
 
+        var vm = this;
+        let heatMapTexture2 = new THREE.Texture(vm.drawheat());
+
+
         let heatMapMaterial = new THREE.MeshBasicMaterial({
-            map: heatMapTexture,
+            map: heatMapTexture2,
             transparent:true
         });
         heatMapMaterial.map.needsUpdate = true;
         var heatMapPlane = new THREE.Mesh(heatMapGeo,heatMapMaterial);
         heatMapPlane.position.set(0,0,0);
-        heatMapPlane.rotation.X = -Math.PI/2;
+        heatMapPlane.rotation.x = -Math.PI/2;
 
         // heatMapPlane.rotation.copy(new THREE.Euler(-Math.PI/2,0, Math.PI));
         this.scene.add(heatMapPlane);
@@ -344,6 +391,10 @@ export default {
   }
   #animation{
     left:800px;
+  }
+  #heatmap{
+    height:400px;
+    width:600px;
   }
 }
 </style>
