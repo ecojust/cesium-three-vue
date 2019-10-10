@@ -1,12 +1,15 @@
 <template>
   <div class="three4s">
         <div id="threewebgl"></div>
-        <!-- <div id="heatmap"></div> -->
-        <!-- <span class="btn" id="animation">animation</span> -->
 
-        <!-- <div class="mask" v-show="loading">
+        <div class="mask" v-show="loading">
           <div>加载中 {{percent}} %</div>
-        </div> -->
+        </div>
+        <div id="map">
+          <div ref="chinamap"></div>
+          <div></div>
+          <div></div>
+        </div>
   </div>
    
 </template>
@@ -15,6 +18,7 @@
 import * as THREE from "three"
 import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
+import chinajson from '../lib/china'
 var TWEEN = require('tween.js');
 
 export default {
@@ -34,9 +38,128 @@ export default {
     this.init();
     this.add();
     this.animate();
-    // this.drawheat();
+    this.echart();
   },
   methods:{
+    echart(){
+      this.$echarts.registerMap("china", chinajson);//注册地图
+      var dom = this.$refs.chinamap;
+      var myChart = this.$echarts.init(dom);
+      var vm = this;
+      var option = {
+          series: [{
+              type: 'map',
+              mapType: 'china',
+              label: {
+                  normal: {
+                      show: true, //显示省份标签
+                      textStyle: {
+                          color: "blue"
+                      } //省份标签字体颜色
+                  },
+                  emphasis: { //对应的鼠标悬浮效果
+                      show: false,
+                      textStyle: {
+                          color: "#800080"
+                      }
+                  }
+              },
+              aspectScale: 0.75,//这个参数用于 scale 地图的长宽比。最终的 aspect 的计算方式是：geoBoundingRect.width / geoBoundingRect.height * aspectScale
+              zoom: 1.2,//当前视角的缩放比例。
+              itemStyle: {
+                  normal: {
+                      borderWidth: .5, //区域边框宽度
+                      borderColor: '#009fe8', //区域边框颜色
+                      areaColor: "#ffefd5", //区域颜色
+                  },
+                  emphasis: {//鼠标滑过地图高亮的相关设置
+                      borderWidth: .5,
+                      borderColor: '#4b0082',
+                      areaColor: "#ffdead",
+                  }
+              }
+          }]
+      };
+      var option2 = { // 进行相关配置
+          backgroundColor: "rgba(0,0,0,0)",
+          title: {
+              text: '全国【门店活跃度】',
+              textStyle: {
+                  color: 'black'
+              }
+          },
+          tooltip: {}, // 鼠标移到图里面的浮动提示框
+          dataRange: {
+            show: false,
+            min: 0,
+            max: 1000,
+            text: ['High', 'Low'],
+            realtime: true,
+            calculable: true,
+            color: ['orangered', 'yellow', 'lightskyblue']
+          },
+          geo: { // 这个是重点配置区
+            map: 'china', // 表示中国地图
+            roam: true,
+            zoom: 1.25,
+            label: {
+              normal: {
+                show: false, // 是否显示对应地名
+                textStyle: {
+                  color: 'rgba(0,0,0,0.4)'
+                }
+              },
+              emphasis: { //动态展示的样式
+                  // color:'#43d0d6',
+                  color:'rgba(0,0,0,0)'
+              },
+            },
+            itemStyle: {
+              normal: {
+                areaColor: "#93bce6",
+                borderWidth: 1.1,
+                textStyle: {
+                    color: "#fff"
+                },
+                borderColor: "#fff" //地图边框颜色
+              },
+              emphasis: {
+                areaColor: null,
+                shadowOffsetX: 0,
+                shadowOffsetY: 0,
+                shadowBlur: 20,
+                borderWidth: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+              }
+            }
+          },
+          series: [
+            {
+              type: 'scatter',
+              coordinateSystem: 'geo' // 对应上方配置
+            },
+            {
+              name: '活跃度', // 浮动框的标题
+              type: 'map',
+              // name: 'bar3D',
+              // type: "bar3D",
+              // coordinateSystem: 'geo3D',
+              geoIndex: 0,
+              data: [
+                {
+                  "name": "浙江",
+                  "value": 599
+                }, 
+                {
+                  "name": "福建",
+                  "value": 142
+                }
+              ]
+            }
+          ]
+        }
+      myChart.setOption(option2);
+    },
     drawheat(){
       var app = document.getElementsByClassName('three4s')[0];
       var width = 400,height = 400;
@@ -427,23 +550,17 @@ export default {
     font-size:32px;
     color:white;
   }
-  .btn{
-    position:absolute;
-    top:20px;
-    z-index:999;
-    background-color:gray;
-    color:white;
-    // border: 1px solid red;
-    border-radius:4px;
-    cursor:pointer;
-    padding:5px;
-  }
-  #animation{
-    left:800px;
-  }
-  #heatmap{
+  #map{
     height:400px;
-    width:600px;
+    position:absolute;
+    top:10px;
+    border:1px solid red;
+    >div{
+      display:inline-block;
+      width:400px;
+      height:100%;
+      border:1px solid blue;
+    }
   }
 }
 </style>
