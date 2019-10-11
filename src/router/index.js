@@ -1,7 +1,5 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import cesiumContainer from '@/components/cesiumContainer'
-
 Vue.use(Router)
 
 export default new Router({
@@ -9,17 +7,17 @@ export default new Router({
     {
       path: '/',
       name: 'cesiumContainer',
-      component: cesiumContainer
+      component: () => import("@/page/cesiumContainer")
     },
     {
       path: '/three',
       name: 'threepage',
-      component: () => import("@/components/threepage")
+      component: () => import("@/page/threepage")
     },
     {
       path: '/three4s',
       name: 'three4s',
-      component: () => import("@/components/three4s")
+      component: () => import("@/page/three4s")
     }
   ]
 })

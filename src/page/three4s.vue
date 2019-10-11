@@ -5,9 +5,16 @@
         <div class="mask" v-show="loading">
           <div>加载中 {{percent}} %</div>
         </div>
-        <div id="map">
+        <div id="map" v-show="mapshow">
           <div ref="chinamap"></div>
-          <div></div>
+          <div>
+            <!-- <Table stripe size="small" height="100" :columns="columns1" :data="data2"></Table>
+            <Table stripe size="small" height="100" :columns="columns1" :data="data2"></Table> -->
+            <div style="height:100px;width:400px;">
+              <ScrollTable :columns="columns1" :data="data2"></ScrollTable>
+            </div>
+
+          </div>
           <div></div>
         </div>
   </div>
@@ -21,8 +28,13 @@ import {cloneGltf} from '../lib/modelUtils'
 import chinajson from '../lib/china'
 var TWEEN = require('tween.js');
 
+import ScrollTable from '@/components/ScrollTable2'
+
 export default {
   name: 'three4s',
+  components:{
+    ScrollTable
+  },
   data(){
     return {
         camera:null,
@@ -31,7 +43,52 @@ export default {
         mesh:null,
         percent:0,
         loading:true,
-        cars:[]
+        cars:[],
+        mapshow:false,
+        columns1: [
+            {
+                title: 'Name',
+                key: 'name',
+                render: (h, params) => {
+                    return h('div', [
+                        h('Icon', {
+                            props: {
+                                type: 'person'
+                            }
+                        }),
+                        h('strong', params.row.name)
+                    ]);
+                }
+            },
+            {
+                title: 'Age',
+                key: 'age'
+            },
+            {
+                title: 'Address',
+                key: 'address'
+            }
+        ],
+        data2:[
+          {
+              name: 'John Brown',
+              age: 18,
+              address: 'New York No. 1 Lake Park',
+              date: '2016-10-03'
+          },
+          {
+              name: 'Jim Green',
+              age: 24,
+              address: 'London No. 1 Lake Park',
+              date: '2016-10-01'
+          },
+          {
+              name: 'Joe Black',
+              age: 30,
+              address: 'Sydney No. 1 Lake Park',
+              date: '2016-10-02'
+          },
+        ]
     }
   },
   mounted(){
@@ -180,7 +237,7 @@ export default {
           // x: 0+i*4,
           // y: 300,
           x:Math.floor(Math.random() * 400),
-          y:Math.floor(Math.random() * 400),
+          y:Math.floor(Math.random() * 200 + 200),
           radius: 20,
           value: 40
         };
@@ -236,9 +293,9 @@ export default {
         const height = dom.clientHeight;
         const draw = dom;
         this.camera = new THREE.PerspectiveCamera(10,width/height,10,4000);
-        this.camera.position.x = 0;
-        this.camera.position.y = 400;
-        this.camera.position.z = 500;
+        this.camera.position.x = -170;
+        this.camera.position.y = 210;
+        this.camera.position.z = 380;
 
 
         this.scene = new THREE.Scene();
@@ -261,31 +318,31 @@ export default {
         this.scene.background = cubeTexture;
 
         //左侧平行光
-        var dirLight = new THREE.DirectionalLight(0xAAFFCC,0.5);
+        var dirLight = new THREE.DirectionalLight(0xffffff,1.0);
         dirLight.position.set(-50, 50,0);
         this.scene.add(dirLight);
         
         //  环境光
-        var amlight = new THREE.AmbientLight(0xAAFFCC,0.5);
+        var amlight = new THREE.AmbientLight(0xffffff,0.5);
         amlight.castShadow = true;
         this.scene.add(amlight);
 
         //4个象限点光
         var pointlight1 = new THREE.PointLight( 0xff0000, 0.5, 100 );
         var pointlight2 = new THREE.PointLight( 0xff0000, 0.5, 100 );
-        var pointlight3 = new THREE.PointLight( 0xff0000, 0.5, 100 );
-        var pointlight4 = new THREE.PointLight( 0xff0000, 0.5, 100 );
+        var pointlight3 = new THREE.PointLight( 0xffffff, 1.0, 100 );
+        var pointlight4 = new THREE.PointLight( 0xffffff, 1.0, 100 );
         pointlight1.position.set( 25, 50, -25 );
         pointlight2.position.set( -25, 50, -25 );
-        pointlight3.position.set( -25, 50, 25 );
-        pointlight4.position.set( 25, 50, 25 );
-        this.scene.add( pointlight1 );
-        this.scene.add( pointlight2 );
+        pointlight3.position.set( -30, 30, 25 );
+        pointlight4.position.set( 30, 30, 25 );
+        // this.scene.add( pointlight1 );
+        // this.scene.add( pointlight2 );
         this.scene.add( pointlight3 );
         this.scene.add( pointlight4 );
 
         //聚光灯
-        var spotLight = new THREE.SpotLight( 0xffffff,1.5 );
+        var spotLight = new THREE.SpotLight( 0xffffff,0.5 );
         spotLight.position.set( 0,50,60 );
         spotLight.castShadow = true;
         spotLight.angle = Math.PI/3;
@@ -307,24 +364,23 @@ export default {
         this.controls.autoRotate = false;
         this.controls.autoRotateSpeed = 3;
         //设置相机距离原点的最远距离
-        this.controls.minDistance = 1;
+        this.controls.minDistance = 400;
         //设置相机距离原点的最远距离
         this.controls.maxDistance = 1000;
         //是否开启右键拖拽
-        this.controls.enablePan = true;
+        this.controls.enablePan = false;
 
         draw.appendChild(this.renderer.domElement);
     },
     add(){
       var helper = new THREE.AxesHelper(100);
-        // this.scene.add(helper);
+        this.scene.add(helper);
         var vm = this;
-        this.heatmap();
 
         var gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('/static/4scar/4scar.gltf', function (gltf) {
+        gltfLoader.load('/static/4scarbig2/4scar.gltf', function (gltf) {
             let obj = cloneGltf(gltf);
-            obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.005;
+            obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.003;
             //将模型缩放并添加到场景当中
             obj.scene.traverse( function ( it ) {
               // console.log(it)
@@ -333,24 +389,19 @@ export default {
                     // it.receiveShadow = true;
                 }
                 if (it.material) {
-                            // if (it.material.opacity < 1) {
-                            //     it.material.side = THREE.BackSide;
-                            //     it.material.depthTest = it.material.depthWrite = false;
-                            // }
-                            // else
-                            it.material.side = THREE.DoubleSide;
+                    // if (it.material.opacity < 1) {
+                    //     it.material.side = THREE.BackSide;
+                    //     it.material.depthTest = it.material.depthWrite = false;
+                    // }
+                    // else
+                    it.material.side = THREE.DoubleSide;
                 }
             });
             vm.mesh = obj.scene;
-            var meshs = obj.scene.children;
-            for(var i =0;i<meshs.length;i++){
-              var item = meshs[i];
-              if(~item.name.indexOf('car')){
-                vm.cars.push(item)
-              }
-            }
             // vm.mesh.position.setY(-2.2);
             vm.scene.add( obj.scene );
+            vm.heatmap();
+
             vm.loading = false;
 
             
@@ -489,10 +540,10 @@ export default {
             return canvas;
         };
 
-        let heatMapGeo = new THREE.PlaneGeometry(90,90);
-        let heatMapTexture = new THREE.Texture(heatMap(100,100));
+        let heatMapGeo = new THREE.PlaneGeometry(120,90);
 
         var vm = this;
+        let heatMapTexture = new THREE.Texture(heatMap(100,100));
         let heatMapTexture2 = new THREE.Texture(vm.drawheat());
 
 
@@ -507,10 +558,6 @@ export default {
 
         // heatMapPlane.rotation.copy(new THREE.Euler(-Math.PI/2,0, Math.PI));
         this.scene.add(heatMapPlane);
-
-
-
-
     },
     animate(){
         this.renderer.render(this.scene,this.camera);
@@ -560,6 +607,7 @@ export default {
       width:400px;
       height:100%;
       border:1px solid blue;
+      vertical-align:top;
     }
   }
 }

@@ -11,6 +11,9 @@ import router from './router'
 import iView from 'iview';
 import 'iview/dist/styles/iview.css';
 Vue.use(iView);
+import GeminiScrollbar from 'vue-gemini-scrollbar'
+
+Vue.use(GeminiScrollbar)
 
 
 import echarts from 'echarts'
