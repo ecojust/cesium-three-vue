@@ -25,9 +25,16 @@
 import * as THREE from "three"
 import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
+
+
+import MeshLineMaterial from '../lib/MeshLineMaterial'
+import MeshLine from '../lib/MeshLine'
+
+
 import chinajson from '../lib/china'
 import {vs,fs} from '../shaders/pathline'
 var TWEEN = require('tween.js');
+// var MeshLine = require( 'three.meshline' );
 
 import ScrollTable from '@/components/ScrollTable2'
 
@@ -259,6 +266,7 @@ export default {
     },
     addpoint(x,z){
       let pointgeo = new THREE.PlaneGeometry(2,2);
+      pointgeo = new THREE.CircleGeometry( 1, 32 );
       var texture = new THREE.TextureLoader().load( '/static/texture/point.png' );
       let pointmat = new THREE.MeshBasicMaterial({
           map: texture,
@@ -266,7 +274,7 @@ export default {
       });
       // pointmat.map.needsUpdate = true;
       var point = new THREE.Mesh(pointgeo,pointmat);
-      point.position.set(x||0,0.3,z||0);
+      point.position.set(x||0,0.4,z||0);
       point.rotation.x = -Math.PI/2;
       this.scene.add(point);
     },
@@ -310,17 +318,71 @@ export default {
       var vertices = [];
       for ( var i = 0; i <30; i ++ ) {
         var x = i * 4 -60;
-        var z = Math.random()* 20 + 20
-        vertices.push( new THREE.Vector3(x, 0.1, z ));
+        var y = Math.random()* 20 + 20;
+        var z = 0.2;
+        vertices.push( new THREE.Vector3(x,z,y ));
       }
       this.vertices = vertices;
       var curve = new THREE.CatmullRomCurve3(vertices);
       var geometry = new THREE.Geometry();
-      geometry.vertices = curve.getPoints(2000);
-      var material = createMaterial(vs,fs);
-      var line = new THREE.Points(geometry, material);
-      this.line = line;
-      this.scene.add( line );
+      geometry.vertices = curve.getPoints(10000);
+
+
+      var material1 = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+      var material2 = createMaterial(vs,fs);
+      var uniforms = {
+              time: {type: 'f', value: -60.0},
+              size:{type:'f',value:25.0},
+          };
+      var shader = {
+        uniforms: uniforms,
+        vertexShader:vs,
+        fragmentShader:fs
+      }
+      material1.onBeforeCompile(shader)
+      var vm = this;
+      
+      var line1 = new THREE.Line(geometry, material1);
+      var line2 = new THREE.Points(geometry, material2);
+
+
+      this.line = line2;
+      this.scene.add( line2 );
+
+
+
+      var colors = [
+        0xed6a5a,
+        0xf4f1bb,
+        0x9bc1bc,
+        0x5ca4a9,
+        0xe6ebe0,
+      ];
+      var resolution = new THREE.Vector2( window.innerWidth, window.innerHeight );
+      function makeLine( geo, c ) {
+
+        var g = new MeshLine();
+        g.setGeometry( geo );
+
+        var material = new MeshLineMaterial( {
+          useMap: false,
+          color: new THREE.Color( colors[ c ] ),
+          opacity: 1,
+          resolution: resolution,
+          sizeAttenuation: !false,
+          lineWidth: .01,
+          near: vm.camera.near,
+          far: vm.camera.far
+        });
+        var mesh = new THREE.Mesh( g.geometry, material );
+        vm.scene.add( mesh );
+
+      }
+
+      // var line = new THREE.Geometry();
+      // line.vertices.push( new THREE.Vector3( -10, 10, 10 ) );
+      // line.vertices.push( new THREE.Vector3( 10, 10, 10 ) );
+      // makeLine( line, 3 );
     },
     clickListener(width,height){
       var vm = this;
@@ -432,7 +494,7 @@ export default {
         this.controls.autoRotate = false;
         this.controls.autoRotateSpeed = 3;
         //设置相机距离原点的最远距离
-        this.controls.minDistance = 400;
+        this.controls.minDistance = 1;
         //设置相机距离原点的最远距离
         this.controls.maxDistance = 1000;
         //是否开启右键拖拽
@@ -489,7 +551,7 @@ export default {
                 vm.percent = percent;
               // },3000)
             },function ( error ) {
-              console.log('load error!'+error.getWebGLErrorMessage());
+              console.log('load error!'+error);
             }
         )
     },
@@ -644,7 +706,7 @@ export default {
             this.line.material.uniforms.time.value +=0.3;
             for(var i = 0,length=this.vertices.length;i<length;i++){
               var point = this.vertices[i];
-              console.log(point);
+              // console.log(point);
               if(Math.abs(point.x-time)< 0.5){
                 this.addpoint(point.x,point.z);
               }
