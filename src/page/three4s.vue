@@ -26,6 +26,7 @@ import * as THREE from "three"
 import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
 import chinajson from '../lib/china'
+import {vs,fs} from '../shaders/pathline'
 var TWEEN = require('tween.js');
 
 import ScrollTable from '@/components/ScrollTable2'
@@ -41,10 +42,12 @@ export default {
         scene:null,
         renderer:null,
         mesh:null,
+        line:null,
         percent:0,
         loading:true,
         cars:[],
         mapshow:false,
+        vertices:[],
         columns1: [
             {
                 title: 'Name',
@@ -254,6 +257,71 @@ export default {
       return canvas;
       // document.body.appendChild(heatmapInstance)
     },
+    addpoint(x,z){
+      let pointgeo = new THREE.PlaneGeometry(2,2);
+      var texture = new THREE.TextureLoader().load( '/static/texture/point.png' );
+      let pointmat = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent:true
+      });
+      // pointmat.map.needsUpdate = true;
+      var point = new THREE.Mesh(pointgeo,pointmat);
+      point.position.set(x||0,0.3,z||0);
+      point.rotation.x = -Math.PI/2;
+      this.scene.add(point);
+    },
+    addline(){
+      // var vertices = [];
+      // for ( var i = 0; i <40; i ++ ) {
+      //   var x = i * 4 -60;
+      //   var z = Math.random()* 20 + 20
+      //   vertices.push( x, 0.1, z );
+      // }
+      // var geometry = new THREE.BufferGeometry();
+      // geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+      // //
+      // var material = new THREE.LineBasicMaterial( {
+      //   color: Math.random() * 0xffffff,
+      //   linewidth: 1000
+      // } );
+      // var line = new THREE.Line( geometry, material );
+      //this.scene.add( line );
+
+      //创建ShaderMaterial纹理的函数
+      function createMaterial(vs, fs) {
+          //配置着色器里面的attribute变量的值
+          var attributes = {};
+          //配置着色器里面的uniform变量的值
+          var uniforms = {
+              time: {type: 'f', value: -60.0},
+              size:{type:'f',value:25.0},
+          };
+          var meshMaterial = new THREE.ShaderMaterial({
+              uniforms: uniforms,
+              defaultAttributeValues : attributes,
+              vertexShader: vs,
+              fragmentShader: fs,
+              transparent: true
+          });
+          return meshMaterial;
+      }
+
+
+      var vertices = [];
+      for ( var i = 0; i <30; i ++ ) {
+        var x = i * 4 -60;
+        var z = Math.random()* 20 + 20
+        vertices.push( new THREE.Vector3(x, 0.1, z ));
+      }
+      this.vertices = vertices;
+      var curve = new THREE.CatmullRomCurve3(vertices);
+      var geometry = new THREE.Geometry();
+      geometry.vertices = curve.getPoints(2000);
+      var material = createMaterial(vs,fs);
+      var line = new THREE.Points(geometry, material);
+      this.line = line;
+      this.scene.add( line );
+    },
     clickListener(width,height){
       var vm = this;
       var raycaster = new THREE.Raycaster();
@@ -374,9 +442,11 @@ export default {
     },
     add(){
       var helper = new THREE.AxesHelper(100);
-        this.scene.add(helper);
+        // this.scene.add(helper);
         var vm = this;
-
+        // this.addline();
+        // this.addpoint();
+        // return;
         var gltfLoader = new THREE.GLTFLoader();
         gltfLoader.load('/static/4scarbig2/4scar.gltf', function (gltf) {
             let obj = cloneGltf(gltf);
@@ -403,6 +473,9 @@ export default {
             vm.heatmap();
 
             vm.loading = false;
+
+            vm.addline();
+
 
             
 
@@ -565,6 +638,24 @@ export default {
           // this.cars[i].rotation.y += 0.01;
           // this.cars[i].rotateY(0.01);
 
+        }
+        if(this.line && this.line.material.uniforms){
+            var time = this.line.material.uniforms.time.value;
+            this.line.material.uniforms.time.value +=0.3;
+            for(var i = 0,length=this.vertices.length;i<length;i++){
+              var point = this.vertices[i];
+              console.log(point);
+              if(Math.abs(point.x-time)< 0.5){
+                this.addpoint(point.x,point.z);
+              }
+            }
+            
+
+            // if(time > 60.0){
+            //     this.line.material.uniforms.time.value -=1.0;
+            // }else{
+            //     this.line.material.uniforms.time.value +=1.0;
+            // }
         }
         TWEEN.update();
         requestAnimationFrame(this.animate);
