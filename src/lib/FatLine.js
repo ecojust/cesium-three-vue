@@ -9,7 +9,7 @@ const vs =`
 
     void main(){
         iPosition = vec3(position);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x,0.2,position.z,1.0);
     }
 `;
 const fs = `
@@ -18,7 +18,7 @@ const fs = `
     uniform float alpha;
 
     void main( void ) {
-        if(iPosition.x > time){
+        if(iPosition.y > time){
             discard;
         }else{
             gl_FragColor = vec4(0.813,0.124,0.334,alpha); 
@@ -30,7 +30,7 @@ const fs = `
 function FatLine(vertices,width,scene){
     this.width = width;
     this.vertices = vertices;
-    this.start = vertices[0].x;
+    this.start = 0;
     this.scene = scene;
     this.linearr = [];
     this.lines = [];
@@ -72,12 +72,13 @@ FatLine.prototype.draw = function() {
         this.linearr.push(linereduce);
     };
     this.linearr.push(vm.vertices);
+    var pointsize = this.vertices.length * 10;
     for(var k = 0,size=this.linearr.length;k<size;k++){
         var vertices = this.linearr[k];
         var alpha = (Math.floor(size/2) - Math.floor(k/2))/Math.floor(size/2);
         var curve = new THREE.CatmullRomCurve3(vertices);
         var geometry = new THREE.Geometry();
-        geometry.vertices = curve.getPoints(300);
+        geometry.vertices = curve.getPoints(pointsize);
         var material = createMaterial(vs,fs,vm.start);
         material.uniforms.alpha = {type:'f',value:alpha};
         var line = new THREE.Line(geometry, material);

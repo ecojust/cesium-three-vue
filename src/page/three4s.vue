@@ -291,16 +291,20 @@ export default {
       //this.scene.add( line );
 
       var vertices = [];
-      for ( var i = 0; i <30; i ++ ) {
+      for ( var i = 0; i <60; i ++ ) {
         var x = i * 4 -60;
-        var y = 0.2;
-        var z = Math.random()* 20 + 20;
+        if(i>30){
+          x = 60 - (i-30)*4
+        }
+        var y = i;
+        var z = Math.random()* 40;
         vertices.push( new THREE.Vector3(x,y,z ));
       }
       this.vertices = vertices;
       this.FatLine = new FatLine(vertices,300,this.scene);
       this.FatLine.draw();
     },
+
     clickListener(width,height){
       var vm = this;
       var raycaster = new THREE.Raycaster();
@@ -483,12 +487,12 @@ export default {
           function addpoint(time){
             for(var i = 0,length=vm.vertices.length;i<length;i++){
               var point = vm.vertices[i];
-              if(Math.abs(point.x-time)< 0.5){
+              if(Math.abs(point.y-time)< 0.1){
                 vm.addpoint(point.x,point.z);
               }
             }
           }
-          this.FatLine.animate(1.0,addpoint);
+          this.FatLine.animate(0.2,addpoint);
         }
         TWEEN.update();
         requestAnimationFrame(this.animate);
