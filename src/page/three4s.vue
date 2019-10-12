@@ -25,16 +25,10 @@
 import * as THREE from "three"
 import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
-
-
-import MeshLineMaterial from '../lib/MeshLineMaterial'
-import MeshLine from '../lib/MeshLine'
-
-
+import FatLine from '../lib/FatLine'
 import chinajson from '../lib/china'
-import {vs,fs} from '../shaders/pathline'
 var TWEEN = require('tween.js');
-// var MeshLine = require( 'three.meshline' );
+
 
 import ScrollTable from '@/components/ScrollTable2'
 
@@ -55,6 +49,7 @@ export default {
         cars:[],
         mapshow:false,
         vertices:[],
+        FatLine:null,
         columns1: [
             {
                 title: 'Name',
@@ -295,94 +290,16 @@ export default {
       // var line = new THREE.Line( geometry, material );
       //this.scene.add( line );
 
-      //创建ShaderMaterial纹理的函数
-      function createMaterial(vs, fs) {
-          //配置着色器里面的attribute变量的值
-          var attributes = {};
-          //配置着色器里面的uniform变量的值
-          var uniforms = {
-              time: {type: 'f', value: -60.0},
-              size:{type:'f',value:25.0},
-          };
-          var meshMaterial = new THREE.ShaderMaterial({
-              uniforms: uniforms,
-              defaultAttributeValues : attributes,
-              vertexShader: vs,
-              fragmentShader: fs,
-              transparent: true
-          });
-          return meshMaterial;
-      }
-
-
       var vertices = [];
       for ( var i = 0; i <30; i ++ ) {
         var x = i * 4 -60;
-        var y = Math.random()* 20 + 20;
-        var z = 0.2;
-        vertices.push( new THREE.Vector3(x,z,y ));
+        var y = 0.2;
+        var z = Math.random()* 20 + 20;
+        vertices.push( new THREE.Vector3(x,y,z ));
       }
       this.vertices = vertices;
-      var curve = new THREE.CatmullRomCurve3(vertices);
-      var geometry = new THREE.Geometry();
-      geometry.vertices = curve.getPoints(10000);
-
-
-      var material1 = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-      var material2 = createMaterial(vs,fs);
-      var uniforms = {
-              time: {type: 'f', value: -60.0},
-              size:{type:'f',value:25.0},
-          };
-      var shader = {
-        uniforms: uniforms,
-        vertexShader:vs,
-        fragmentShader:fs
-      }
-      material1.onBeforeCompile(shader)
-      var vm = this;
-      
-      var line1 = new THREE.Line(geometry, material1);
-      var line2 = new THREE.Points(geometry, material2);
-
-
-      this.line = line2;
-      this.scene.add( line2 );
-
-
-
-      var colors = [
-        0xed6a5a,
-        0xf4f1bb,
-        0x9bc1bc,
-        0x5ca4a9,
-        0xe6ebe0,
-      ];
-      var resolution = new THREE.Vector2( window.innerWidth, window.innerHeight );
-      function makeLine( geo, c ) {
-
-        var g = new MeshLine();
-        g.setGeometry( geo );
-
-        var material = new MeshLineMaterial( {
-          useMap: false,
-          color: new THREE.Color( colors[ c ] ),
-          opacity: 1,
-          resolution: resolution,
-          sizeAttenuation: !false,
-          lineWidth: .01,
-          near: vm.camera.near,
-          far: vm.camera.far
-        });
-        var mesh = new THREE.Mesh( g.geometry, material );
-        vm.scene.add( mesh );
-
-      }
-
-      // var line = new THREE.Geometry();
-      // line.vertices.push( new THREE.Vector3( -10, 10, 10 ) );
-      // line.vertices.push( new THREE.Vector3( 10, 10, 10 ) );
-      // makeLine( line, 3 );
+      this.FatLine = new FatLine(vertices,300,this.scene);
+      this.FatLine.draw();
     },
     clickListener(width,height){
       var vm = this;
@@ -506,9 +423,6 @@ export default {
       var helper = new THREE.AxesHelper(100);
         // this.scene.add(helper);
         var vm = this;
-        // this.addline();
-        // this.addpoint();
-        // return;
         var gltfLoader = new THREE.GLTFLoader();
         gltfLoader.load('/static/4scarbig2/4scar.gltf', function (gltf) {
             let obj = cloneGltf(gltf);
@@ -533,15 +447,8 @@ export default {
             // vm.mesh.position.setY(-2.2);
             vm.scene.add( obj.scene );
             vm.heatmap();
-
             vm.loading = false;
-
             vm.addline();
-
-
-            
-
-
             },function ( xhr ) {
               // setTimeout(()=>{
                 var percent = parseFloat(xhr.loaded / 292000 * 100).toFixed(0);
@@ -556,132 +463,9 @@ export default {
         )
     },
     heatmap(){
-      var vm = this;
-      //随机温度值
-      let getTemperature=()=>{
-          var  temperatureArray=new Array();
-          for(let i = 0;i<20;i++){
-            // temperatureArray.push(parseInt(Math.random()*35+20))
-            temperatureArray.push(50)
-
-          }
-          return temperatureArray;
-      };
-      //获取温度点的XY坐标
-      let getPositionXY=(i)=>{
-          let positionX=[
-            
-
-          ];
-          let positionY=[0,25,50,75,10,20];
-          return {
-              x:i*2+10,
-              // y:positionY[i]
-              y:20
-          }
-      };
-      //绘制辐射圆
-      let drawCircular=(context,opts)=>{
-          let {x,y,radius,weight}=opts;
-          // radius=parseInt(radius*weight);//计算出实际的辐射圆
-          // 创建圆设置填充色
-          let rGradient = context.createRadialGradient(x, y, 0, x, y, radius);
-          rGradient.addColorStop(0, "rgba(0, 1, 0, 1)");
-          rGradient.addColorStop(1, "rgba(1, 0, 0, 0)");
-          context.fillStyle = rGradient;
-          // 设置globalAlpha
-          context.globalAlpha = weight;
-          context.beginPath();
-          context.arc(x, y, radius, 0, 2 * Math.PI);
-          context.closePath();
-          context.fill();// 填充
-      };
-      //调色板
-      let createPalette=()=>{
-            //颜色条的颜色分布
-            let colorStops = {
-                0: "#0ff",
-                0.4: "#0f0",
-                0.8: "#ff0",
-                1: "#f00"
-            };
-            //颜色条的大小
-            let width = 256, height = 1;
-            // 创建canvas
-            let paletteCanvas = document.createElement("canvas");
-            paletteCanvas.width = width;
-            paletteCanvas.height = height;
-            let ctx = paletteCanvas.getContext("2d");
-
-            // 创建线性渐变色
-            let linearGradient = ctx.createLinearGradient(0, 0, width, 0);
-            for (const key in colorStops) {
-                linearGradient.addColorStop(key, colorStops[key]);
-            }
-
-            // 绘制渐变色条
-            ctx.fillStyle = linearGradient;
-            ctx.fillRect(0, 0, width, height);
-
-            let imageData = ctx.getImageData(0, 0, width, height).data;// 读取像素值
-
-            return {
-                canvas: paletteCanvas,
-                pickColor: function (position) {
-                    return imageData.slice(position * 4, position * 4+3 )
-                }
-            }
-        };
-      //绘制热力图
-      let heatMap=(width,height)=>{
-            let canvas = document.createElement("canvas");
-            canvas.width=width;
-            canvas.height=height;
-            let context = canvas.getContext("2d");
-            let tenperature=getTemperature();
-            var size = tenperature.length;
-
-            for(let i=0;i<size;i++) {
-                // for (let j = 0; j < size; j++) {
-                    let weight=tenperature[i]/100;  //计算出当前温度占标准温度的权值
-                    drawCircular(context,{
-                        x:getPositionXY(i).x,
-                        y:getPositionXY(i).y,
-                        radius:4,
-                        weight:weight
-                    })
-                // }
-            }
-            let palette=createPalette();
-            // document.body.appendChild(palette.canvas);
-            let imageData = context.getImageData(0, 0, width, height);
-            let data=imageData.data;
-            // console.log(data)
-
-            for (let i = 3; i < data.length; i += 4) {//根据画面数据绘制颜色
-                let alpha = data[i];
-                let color = palette.pickColor(alpha);
-                data[i - 3] = color[0];
-                data[i - 2] = color[1];
-                data[i - 1] = color[2];
-                if(alpha==0){
-                  data[i - 3] = 0;
-                  data[i - 2] = 255;
-                  data[i - 1] = 255;
-                  data[i] = 255;
-                }
-            }
-            context.putImageData(imageData, 0, 0);//设置画面数据
-            return canvas;
-        };
-
-        let heatMapGeo = new THREE.PlaneGeometry(120,90);
-
         var vm = this;
-        let heatMapTexture = new THREE.Texture(heatMap(100,100));
+        let heatMapGeo = new THREE.PlaneGeometry(120,90);
         let heatMapTexture2 = new THREE.Texture(vm.drawheat());
-
-
         let heatMapMaterial = new THREE.MeshBasicMaterial({
             map: heatMapTexture2,
             transparent:true
@@ -690,34 +474,21 @@ export default {
         var heatMapPlane = new THREE.Mesh(heatMapGeo,heatMapMaterial);
         heatMapPlane.position.set(0,0.1,0);
         heatMapPlane.rotation.x = -Math.PI/2;
-
-        // heatMapPlane.rotation.copy(new THREE.Euler(-Math.PI/2,0, Math.PI));
         this.scene.add(heatMapPlane);
     },
     animate(){
         this.renderer.render(this.scene,this.camera);
-        for(var i = 0;i<this.cars.length;i++){
-          // this.cars[i].rotation.y += 0.01;
-          // this.cars[i].rotateY(0.01);
-
-        }
-        if(this.line && this.line.material.uniforms){
-            var time = this.line.material.uniforms.time.value;
-            this.line.material.uniforms.time.value +=0.3;
-            for(var i = 0,length=this.vertices.length;i<length;i++){
-              var point = this.vertices[i];
-              // console.log(point);
+        var vm = this;
+        if(this.FatLine){
+          function addpoint(time){
+            for(var i = 0,length=vm.vertices.length;i<length;i++){
+              var point = vm.vertices[i];
               if(Math.abs(point.x-time)< 0.5){
-                this.addpoint(point.x,point.z);
+                vm.addpoint(point.x,point.z);
               }
             }
-            
-
-            // if(time > 60.0){
-            //     this.line.material.uniforms.time.value -=1.0;
-            // }else{
-            //     this.line.material.uniforms.time.value +=1.0;
-            // }
+          }
+          this.FatLine.animate(1.0,addpoint);
         }
         TWEEN.update();
         requestAnimationFrame(this.animate);
