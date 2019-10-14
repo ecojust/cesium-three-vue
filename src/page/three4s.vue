@@ -23,6 +23,9 @@
 
 <script>
 import * as THREE from "three"
+import { BloomEffect, EffectComposer, EffectPass, RenderPass,ShaderPass } from "postprocessing";
+import {SweepingLightShader} from '../lib/ShaderPass'
+
 import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
 import FatLine from '../lib/FatLine'
@@ -31,6 +34,7 @@ var TWEEN = require('tween.js');
 
 import { BloomEffect, EffectComposer, EffectPass, RenderPass,ShaderPass } from "postprocessing";
 import {SweepingLightShader} from '../lib/ShaderPass'
+
 
 
 import ScrollTable from '@/components/ScrollTable2'
