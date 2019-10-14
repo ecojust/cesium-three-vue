@@ -23,11 +23,15 @@
 
 <script>
 import * as THREE from "three"
+import { BloomEffect, EffectComposer, EffectPass, RenderPass,ShaderPass } from "postprocessing";
+import {SweepingLightShader} from '../lib/ShaderPass'
+
 import Heatmap from 'heatmap.js'
 import {cloneGltf} from '../lib/modelUtils'
 import FatLine from '../lib/FatLine'
 import chinajson from '../lib/china'
 var TWEEN = require('tween.js');
+
 
 
 import ScrollTable from '@/components/ScrollTable2'
@@ -50,6 +54,10 @@ export default {
         mapshow:false,
         vertices:[],
         FatLine:null,
+        composer:null,
+        myShaderMaterial:null,
+        time:0.0,
+        type:'add',
         columns1: [
             {
                 title: 'Name',
@@ -103,6 +111,29 @@ export default {
     this.echart();
   },
   methods:{
+    addcomposer(){
+
+        this.composer.addPass(new RenderPass(this.scene, this.camera));
+
+        this.myShaderMaterial = new THREE.ShaderMaterial({
+          defines: { LABEL: "value" },
+          uniforms: { 
+            tDiffuse: new THREE.Uniform(null),
+            time:new THREE.Uniform(0.0)
+          },
+          vertexShader: SweepingLightShader.vertexShader,
+          fragmentShader: SweepingLightShader.fragmentShader
+        });
+        const myShaderPass = new ShaderPass(this.myShaderMaterial, "tDiffuse");
+        this.composer.addPass(myShaderPass);
+
+
+
+
+        const effectPass = new EffectPass(this.camera, new BloomEffect());
+        effectPass.renderToScreen = true;
+        this.composer.addPass(effectPass);
+    },
     echart(){
       this.$echarts.registerMap("china", chinajson);//注册地图
       var dom = this.$refs.chinamap;
@@ -422,6 +453,8 @@ export default {
         this.controls.enablePan = false;
 
         draw.appendChild(this.renderer.domElement);
+
+        this.composer = new EffectComposer(this.renderer);
     },
     add(){
       var helper = new THREE.AxesHelper(100);
@@ -453,6 +486,7 @@ export default {
             vm.heatmap();
             vm.loading = false;
             vm.addline();
+            vm.addcomposer();
             },function ( xhr ) {
               // setTimeout(()=>{
                 var percent = parseFloat(xhr.loaded / 292000 * 100).toFixed(0);
@@ -481,8 +515,25 @@ export default {
         this.scene.add(heatMapPlane);
     },
     animate(){
-        this.renderer.render(this.scene,this.camera);
+        const clock = new THREE.Clock();
+        this.composer.render(clock.getDelta());
+        // this.renderer.render(this.scene,this.camera);
+
         var vm = this;
+        if(this.myShaderMaterial){
+          if(this.time > 1.0){
+            this.type = 'reduce';
+          }else if(this.time < -1.0){
+            this.type = 'add'
+          }
+          if(this.type=='add'){
+            this.time += 0.01;
+          }else{
+            this.time -= 0.01;
+          }
+          this.myShaderMaterial.uniforms.time= new THREE.Uniform(vm.time);
+        }
+        
         if(this.FatLine){
           function addpoint(time){
             for(var i = 0,length=vm.vertices.length;i<length;i++){

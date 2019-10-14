@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+// import * as THREE from '../../three/build/three.module.js';
+
 /**
  * Author:桔子桑
  * Time:2019.10.12

@@ -15,7 +15,7 @@
     "element-ui": "^2.12.0",
     "heatmap.js": "^2.0.5",
     "iview": "^3.5.1",
-    "three": "^0.103.0",
+    "three": "^0.109.0",
     "tween.js": "^16.6.0",
     "vue": "^2.5.2",
     "vue-gemini-scrollbar": "^2.0.1",
