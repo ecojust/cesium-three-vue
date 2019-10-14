@@ -56,7 +56,7 @@ export default {
         FatLine:null,
         composer:null,
         myShaderMaterial:null,
-        time:0.0,
+        time:-1.0,
         type:'add',
         columns1: [
             {
@@ -119,7 +119,7 @@ export default {
           defines: { LABEL: "value" },
           uniforms: { 
             tDiffuse: new THREE.Uniform(null),
-            time:new THREE.Uniform(0.0)
+            time:new THREE.Uniform(-1.0)
           },
           vertexShader: SweepingLightShader.vertexShader,
           fragmentShader: SweepingLightShader.fragmentShader
