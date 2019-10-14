@@ -63,8 +63,8 @@ FatLine.prototype.draw = function() {
             x = Vector3.x,
             y = Vector3.y,
             z = Vector3.z;
-            var zadd = z+j*0.001;
-            var zreduce = z-j*0.001;
+            var zadd = z+j*0.002;
+            var zreduce = z-j*0.002;
             lineadd.push( new THREE.Vector3(x,y,zadd ));
             linereduce.push( new THREE.Vector3(x,y,zreduce ));
         }
@@ -72,7 +72,7 @@ FatLine.prototype.draw = function() {
         this.linearr.push(linereduce);
     };
     this.linearr.push(vm.vertices);
-    var pointsize = this.vertices.length * 10;
+    var pointsize = this.vertices.length * 15;
     for(var k = 0,size=this.linearr.length;k<size;k++){
         var vertices = this.linearr[k];
         var alpha = (Math.floor(size/2) - Math.floor(k/2))/Math.floor(size/2);

@@ -29,6 +29,9 @@ import FatLine from '../lib/FatLine'
 import chinajson from '../lib/china'
 var TWEEN = require('tween.js');
 
+import { BloomEffect, EffectComposer, EffectPass, RenderPass,ShaderPass } from "postprocessing";
+import {SweepingLightShader} from '../lib/ShaderPass'
+
 
 import ScrollTable from '@/components/ScrollTable2'
 
@@ -50,6 +53,12 @@ export default {
         mapshow:false,
         vertices:[],
         FatLine:null,
+        composer:null,
+        myShaderMaterial:null,
+        lighttype:'gradient',
+        rendertype:'composer',
+        time:-2.0,
+        type:'add',
         columns1: [
             {
                 title: 'Name',
@@ -103,6 +112,26 @@ export default {
     this.echart();
   },
   methods:{
+    addcomposer(){
+        this.composer.addPass(new RenderPass(this.scene, this.camera));
+        this.myShaderMaterial = new THREE.ShaderMaterial({
+          defines: { LABEL: "value" },
+          uniforms: { 
+            tDiffuse: new THREE.Uniform(null),
+            time:new THREE.Uniform(this.time)
+          },
+          vertexShader: SweepingLightShader.vertexShader,
+          fragmentShader: SweepingLightShader.fragmentShader
+        });
+        const myShaderPass = new ShaderPass(this.myShaderMaterial, "tDiffuse");
+        this.composer.addPass(myShaderPass);
+        const effectPass = new EffectPass(this.camera, new BloomEffect({
+          // luminanceThreshold:0.9,
+          // luminanceSmoothing:0
+        }));
+        effectPass.renderToScreen = true;
+        this.composer.addPass(effectPass);
+    },
     echart(){
       this.$echarts.registerMap("china", chinajson);//注册地图
       var dom = this.$refs.chinamap;
@@ -296,7 +325,7 @@ export default {
         if(i>30){
           x = 60 - (i-30)*4
         }
-        var y = i;
+        var y = i * 0.3;
         var z = Math.random()* 40;
         vertices.push( new THREE.Vector3(x,y,z ));
       }
@@ -344,9 +373,11 @@ export default {
         const height = dom.clientHeight;
         const draw = dom;
         this.camera = new THREE.PerspectiveCamera(10,width/height,10,4000);
-        this.camera.position.x = -170;
-        this.camera.position.y = 210;
-        this.camera.position.z = 380;
+        var far = 0.9;
+        this.camera.position.x = -40;
+        this.camera.position.y = 300 * far;
+        this.camera.position.z = 500 * far;
+        this.camera.lookAt(0,0,0);
 
 
         this.scene = new THREE.Scene();
@@ -366,7 +397,7 @@ export default {
             'py.jpg', 'ny.jpg',
             'pz.jpg', 'nz.jpg'
         ] );
-        this.scene.background = cubeTexture;
+        // this.scene.background = cubeTexture;
 
         //左侧平行光
         var dirLight = new THREE.DirectionalLight(0xffffff,1.0);
@@ -398,7 +429,7 @@ export default {
         spotLight.castShadow = true;
         spotLight.angle = Math.PI/3;
         var spotHelper = new THREE.SpotLightHelper(spotLight);
-        this.scene.add( spotLight );
+        // this.scene.add( spotLight );
         // this.scene.add( spotHelper );
 
 
@@ -406,7 +437,7 @@ export default {
         // 如果使用animate方法时，将此函数删除
         //controls.addEventListener( 'change', render );
         // 使动画循环使用时阻尼或自转 意思是否有惯性
-        this.controls.enableDamping = true;
+        this.controls.enableDamping = false;
         //动态阻尼系数 就是鼠标拖拽旋转灵敏度
         //controls.dampingFactor = 0.25;
         //是否可以缩放
@@ -414,14 +445,15 @@ export default {
         //是否自动旋转
         this.controls.autoRotate = false;
         this.controls.autoRotateSpeed = 3;
-        //设置相机距离原点的最远距离
-        this.controls.minDistance = 1;
+        //设置相机距离原点的最近距离
+        this.controls.minDistance = 100;
         //设置相机距离原点的最远距离
         this.controls.maxDistance = 1000;
         //是否开启右键拖拽
         this.controls.enablePan = false;
 
         draw.appendChild(this.renderer.domElement);
+        this.composer = new EffectComposer(this.renderer);
     },
     add(){
       var helper = new THREE.AxesHelper(100);
@@ -452,7 +484,7 @@ export default {
             vm.scene.add( obj.scene );
             vm.heatmap();
             vm.loading = false;
-            vm.addline();
+            vm.addcomposer();
             },function ( xhr ) {
               // setTimeout(()=>{
                 var percent = parseFloat(xhr.loaded / 292000 * 100).toFixed(0);
@@ -481,8 +513,43 @@ export default {
         this.scene.add(heatMapPlane);
     },
     animate(){
-        this.renderer.render(this.scene,this.camera);
+        const clock = new THREE.Clock();
+        if(this.rendertype == 'composer'){
+          this.composer.render(clock.getDelta());
+        }else{
+          this.renderer.render(this.scene,this.camera);
+        }
         var vm = this;
+
+        //循环扫光
+        if(this.myShaderMaterial&&this.lighttype=='cycle'){
+          if(this.time > 2.0){
+            this.type = 'reduce';
+          }else if(this.time < -2.0){
+            this.type = 'add'
+          }
+          if(this.type=='add'){
+            this.time += 0.08;
+          }else{
+            this.time -= 0.08;
+          }
+          this.myShaderMaterial.uniforms.time= new THREE.Uniform(this.time);
+        }
+        //扫光结束场景变亮
+        if(this.myShaderMaterial&&this.lighttype=='gradient'){
+          if(this.time > 3.75){
+            this.rendertype = 'renderer';
+            this.lighttype = '';
+            this.addline();
+            // this.heatmap();
+          }else if(this.time > 2.0){
+            this.time += 0.08;
+
+          }else{
+            this.time += 0.08;
+          }
+          this.myShaderMaterial.uniforms.time= new THREE.Uniform(this.time);
+        }
         if(this.FatLine){
           function addpoint(time){
             for(var i = 0,length=vm.vertices.length;i<length;i++){
@@ -492,7 +559,7 @@ export default {
               }
             }
           }
-          this.FatLine.animate(0.2,addpoint);
+          this.FatLine.animate(0.3,addpoint);
         }
         TWEEN.update();
         requestAnimationFrame(this.animate);
