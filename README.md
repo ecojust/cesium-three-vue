@@ -1,5 +1,5 @@
 # cesium-three-vue
-### cesium、three、vue结合的测试demo
+### cesium、three、vue结合的测试demo(模型素材等静态文件超过100M,不上传)
 ##### 1.载入cesium地球
 ![avatar](/image/earth.png)
 
