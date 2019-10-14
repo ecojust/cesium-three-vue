@@ -374,9 +374,9 @@ export default {
         const draw = dom;
         this.camera = new THREE.PerspectiveCamera(10,width/height,10,4000);
         var far = 0.9;
-        this.camera.position.x = -40;
-        this.camera.position.y = 300 * far;
-        this.camera.position.z = 500 * far;
+        this.camera.position.x = -80;
+        this.camera.position.y = 500 * far;
+        this.camera.position.z = 400 * far;
         this.camera.lookAt(0,0,0);
 
 
