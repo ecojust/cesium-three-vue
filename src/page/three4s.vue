@@ -279,7 +279,7 @@ export default {
       })
       var points = []
       var max = 0
-      for(var i = 0;i<300;i++){
+      for(var i = 0;i<100;i++){
         var val = Math.floor(Math.random() * 100);
         max = Math.max(max, val);
         var point = {
@@ -313,7 +313,7 @@ export default {
       });
       // pointmat.map.needsUpdate = true;
       var point = new THREE.Mesh(pointgeo,pointmat);
-      point.position.set(x||0,0.4,z||0);
+      point.position.set(x||0,1.4,z||0);
       point.rotation.x = -Math.PI/2;
       this.scene.add(point);
     },
@@ -398,6 +398,9 @@ export default {
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({antialias:true});
         this.renderer.setSize(width,height);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.needsUpdate = true;
+
         this.clickListener(width,height);
 
 
@@ -412,35 +415,45 @@ export default {
             'py.jpg', 'ny.jpg',
             'pz.jpg', 'nz.jpg'
         ] );
-        this.scene.background = cubeTexture;
+
+        
+        var vm = this;
+        vm.scene.background = cubeTexture;
+
+        var TextureLoader = new THREE.TextureLoader();
+        TextureLoader.setPath( '/static/texture/' );
+        TextureLoader.load('6.jpg',(texture)=>{
+        vm.scene.background = texture;
+
+        });
+
 
         //左侧平行光
-        var dirLight = new THREE.DirectionalLight(0x6495ED,0.5);
+        var dirLight = new THREE.DirectionalLight(0x8B0000,0.5);
         dirLight.position.set(-50, 50,0);
+        dirLight.castShadow = true;
         this.scene.add(dirLight);
         
         //  环境光
+        //0x6495ED
         var amlight = new THREE.AmbientLight(0x6495ED,0.5);
-        amlight.castShadow = true;
         this.scene.add(amlight);
 
         //4个象限点光
-        var pointlight1 = new THREE.PointLight( 0xff0000, 0.5, 100 );
-        var pointlight2 = new THREE.PointLight( 0xff0000, 0.5, 100 );
-        var pointlight3 = new THREE.PointLight( 0xffffff, 1.0, 100 );
+        var pointlight3 = new THREE.PointLight( 0xffffff, 0.1, 1 );
+        var pointlight32 = new THREE.PointLight( 0xffffff, 1.0, 100 );
         var pointlight4 = new THREE.PointLight( 0xffffff, 1.0, 100 );
-        pointlight1.position.set( 25, 50, -25 );
-        pointlight2.position.set( -25, 50, -25 );
-        pointlight3.position.set( -30, 30, 25 );
-        pointlight4.position.set( 30, 30, 25 );
-        // this.scene.add( pointlight1 );
-        // this.scene.add( pointlight2 );
+        pointlight3.position.set( -80,40,20 );
+        pointlight32.position.set( -30, 10, 25 );
+        pointlight4.position.set( 30, 10, 25 );
+        pointlight3.castShadow = true;
         this.scene.add( pointlight3 );
+        this.scene.add( pointlight32 );
         this.scene.add( pointlight4 );
 
         //聚光灯
-        var spotLight = new THREE.SpotLight( 0xffffff,0.5 );
-        spotLight.position.set( 0,50,60 );
+        var spotLight = new THREE.SpotLight( 0xffffff,1.0 );
+        spotLight.position.set( -80,40,20 );
         spotLight.castShadow = true;
         spotLight.angle = Math.PI/3;
         var spotHelper = new THREE.SpotLightHelper(spotLight);
@@ -471,6 +484,14 @@ export default {
         this.composer = new PostProcessing.EffectComposer(this.renderer);
     },
     add(){
+      var geometry = new THREE.PlaneGeometry( 1000, 200);
+      var material = new THREE.MeshLambertMaterial( {color: 0x778899, side: THREE.DoubleSide} );
+      var plane = new THREE.Mesh( geometry, material );
+      plane.position.setY(1.0);
+      plane.rotation.x = Math.PI/2;
+      plane.receiveShadow = true;
+      this.scene.add( plane );
+
       var helper = new THREE.AxesHelper(100);
         // this.scene.add(helper);
         var vm = this;
@@ -480,7 +501,8 @@ export default {
             obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.003;
             //将模型缩放并添加到场景当中
             obj.scene.traverse( function ( it ) {
-              // console.log(it)
+                    // it.receiveShadow = true;
+
                if (it.isMesh) {
                     it.castShadow = true;
                     // it.receiveShadow = true;
@@ -523,7 +545,7 @@ export default {
         });
         heatMapMaterial.map.needsUpdate = true;
         var heatMapPlane = new THREE.Mesh(heatMapGeo,heatMapMaterial);
-        heatMapPlane.position.set(0,0.1,0);
+        heatMapPlane.position.set(0,1.1,0);
         heatMapPlane.rotation.x = -Math.PI/2;
         this.scene.add(heatMapPlane);
     },
@@ -557,7 +579,7 @@ export default {
             this.rendertype = 'renderer';
             this.lighttype = '';
             this.addline();
-            // this.heatmap();
+            this.heatmap();
           }else if(this.time > 2.0){
             this.time += 0.1;
 

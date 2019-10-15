@@ -11,7 +11,7 @@ const vs =`
 
     void main(){
         iPosition = vec3(position);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x,0.2,position.z,1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x,1.2,position.z,1.0);
     }
 `;
 const fs = `
