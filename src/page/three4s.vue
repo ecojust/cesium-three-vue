@@ -29,8 +29,10 @@ import FatLine from '../lib/FatLine'
 import chinajson from '../lib/china'
 var TWEEN = require('tween.js');
 
-import { BloomEffect, EffectComposer, EffectPass, RenderPass,ShaderPass } from "postprocessing";
-import {SweepingLightShader} from '../lib/ShaderPass'
+// import { BloomEffect, EffectComposer, EffectPass, RenderPass,ShaderPass } from "postprocessing";
+import * as PostProcessing from "postprocessing";
+
+import {SweepingLightShader,FXAAShader} from '../lib/Shader'
 
 
 
@@ -114,7 +116,8 @@ export default {
   },
   methods:{
     addcomposer(){
-        this.composer.addPass(new RenderPass(this.scene, this.camera));
+        //扫光shader
+        this.composer.addPass(new PostProcessing.RenderPass(this.scene, this.camera));
         this.myShaderMaterial = new THREE.ShaderMaterial({
           defines: { LABEL: "value" },
           uniforms: { 
@@ -124,12 +127,23 @@ export default {
           vertexShader: SweepingLightShader.vertexShader,
           fragmentShader: SweepingLightShader.fragmentShader
         });
-        const myShaderPass = new ShaderPass(this.myShaderMaterial, "tDiffuse");
+        const myShaderPass = new PostProcessing.ShaderPass(this.myShaderMaterial, "tDiffuse");
         this.composer.addPass(myShaderPass);
-        const effectPass = new EffectPass(this.camera, new BloomEffect({
-          // luminanceThreshold:0.9,
-          // luminanceSmoothing:0
-        }));
+        //抗锯齿shader
+        var FXAAShaderMaterial = new THREE.ShaderMaterial({
+          defines: { LABEL: "value" },
+          uniforms: { 
+            tDiffuse: new THREE.Uniform(null),
+            resolution:new THREE.Uniform(new THREE.Vector2(1/window.innerWidth,1/window.innerHeight))
+          },
+          vertexShader: FXAAShader.vertexShader,
+          fragmentShader: FXAAShader.fragmentShader
+        });
+        const FXAAShaderPass = new PostProcessing.ShaderPass(FXAAShaderMaterial, "tDiffuse");
+        this.composer.addPass(FXAAShaderPass);
+        //辉光Effect提供场景光照
+        var effect = new PostProcessing.BloomEffect();
+        const effectPass = new PostProcessing.EffectPass(this.camera, effect);
         effectPass.renderToScreen = true;
         this.composer.addPass(effectPass);
     },
@@ -373,11 +387,11 @@ export default {
         const width = dom.clientWidth;
         const height = dom.clientHeight;
         const draw = dom;
-        this.camera = new THREE.PerspectiveCamera(10,width/height,10,4000);
-        var far = 0.9;
-        this.camera.position.x = -80;
-        this.camera.position.y = 500 * far;
-        this.camera.position.z = 400 * far;
+        this.camera = new THREE.PerspectiveCamera(60,width/height,10,4000);
+        var far = 0.6;
+        this.camera.position.x = -8;
+        this.camera.position.y = 150 * far;
+        this.camera.position.z = 150 * far;
         this.camera.lookAt(0,0,0);
 
 
@@ -398,15 +412,15 @@ export default {
             'py.jpg', 'ny.jpg',
             'pz.jpg', 'nz.jpg'
         ] );
-        // this.scene.background = cubeTexture;
+        this.scene.background = cubeTexture;
 
         //左侧平行光
-        var dirLight = new THREE.DirectionalLight(0x7B68EE,0.5);
+        var dirLight = new THREE.DirectionalLight(0x6495ED,0.5);
         dirLight.position.set(-50, 50,0);
         this.scene.add(dirLight);
         
         //  环境光
-        var amlight = new THREE.AmbientLight(0x7B68EE,0.5);
+        var amlight = new THREE.AmbientLight(0x6495ED,0.5);
         amlight.castShadow = true;
         this.scene.add(amlight);
 
@@ -449,19 +463,19 @@ export default {
         //设置相机距离原点的最近距离
         this.controls.minDistance = 100;
         //设置相机距离原点的最远距离
-        this.controls.maxDistance = 1000;
+        this.controls.maxDistance = 200;
         //是否开启右键拖拽
         this.controls.enablePan = false;
 
         draw.appendChild(this.renderer.domElement);
-        this.composer = new EffectComposer(this.renderer);
+        this.composer = new PostProcessing.EffectComposer(this.renderer);
     },
     add(){
       var helper = new THREE.AxesHelper(100);
         // this.scene.add(helper);
         var vm = this;
         var gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('/static/4scarbig2/4scar.gltf', function (gltf) {
+        gltfLoader.load('/static/4scarbig/4scar.gltf', function (gltf) {
             let obj = cloneGltf(gltf);
             obj.scene.scale.x = obj.scene.scale.y = obj.scene.scale.z = 0.003;
             //将模型缩放并添加到场景当中
@@ -545,7 +559,7 @@ export default {
             this.addline();
             // this.heatmap();
           }else if(this.time > 2.0){
-            this.time += 0.08;
+            this.time += 0.1;
 
           }else{
             this.time += 0.08;

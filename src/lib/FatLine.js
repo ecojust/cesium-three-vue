@@ -24,6 +24,7 @@ const fs = `
             discard;
         }else{
             gl_FragColor = vec4(0.813,0.124,0.334,alpha); 
+            //gl_FragColor = vec4(100./255.,149./255.,237./255.,alpha*0.6); 
         }
 
     }
