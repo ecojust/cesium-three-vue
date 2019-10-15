@@ -401,12 +401,12 @@ export default {
         // this.scene.background = cubeTexture;
 
         //左侧平行光
-        var dirLight = new THREE.DirectionalLight(0xffffff,1.0);
+        var dirLight = new THREE.DirectionalLight(0x7B68EE,0.5);
         dirLight.position.set(-50, 50,0);
         this.scene.add(dirLight);
         
         //  环境光
-        var amlight = new THREE.AmbientLight(0xffffff,0.5);
+        var amlight = new THREE.AmbientLight(0x7B68EE,0.5);
         amlight.castShadow = true;
         this.scene.add(amlight);
 
@@ -538,6 +538,7 @@ export default {
         }
         //扫光结束场景变亮
         if(this.myShaderMaterial&&this.lighttype=='gradient'){
+          //3.75
           if(this.time > 3.75){
             this.rendertype = 'renderer';
             this.lighttype = '';
